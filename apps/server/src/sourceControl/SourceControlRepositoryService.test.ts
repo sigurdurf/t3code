@@ -16,6 +16,7 @@ import * as TestClock from "effect/testing/TestClock";
 import {
   GitCommandError,
   SourceControlProviderError,
+  SourceControlRepositoryError,
   type SourceControlCloneRepositoryInput,
 } from "@t3tools/contracts";
 
@@ -843,6 +844,59 @@ it.effect("says the repository exists when an unclassified publish push fails", 
     );
   }).pipe(Effect.provide(layer({ git: failingPush() }))),
 );
+
+it.effect("retries a publish whose repository an earlier attempt created and linked", () => {
+  const provider = makeProvider({
+    createRepository: (input) =>
+      Effect.fail(
+        new SourceControlProviderError({
+          provider: SourceControlProviderKind.make("github"),
+          operation: "createRepository",
+          detail: "name already exists on this account",
+          cwd: input.cwd,
+        }),
+      ),
+  });
+  const gitArgs: Array<ReadonlyArray<string>> = [];
+  const publish = (remotes: string) =>
+    Effect.gen(function* () {
+      const service = yield* SourceControlRepositoryService.SourceControlRepositoryService;
+      return yield* service.publishRepository({
+        cwd: "/workspace",
+        provider: SourceControlProviderKind.make("github"),
+        repository: "octocat/t3code",
+        visibility: "private",
+        protocol: "https",
+      });
+    }).pipe(
+      Effect.provide(
+        layer({
+          provider,
+          git: {
+            execute: (input) =>
+              Effect.sync(() => {
+                gitArgs.push(input.args);
+                return {
+                  ...processOutput(),
+                  stdout: input.args[0] === "remote" ? remotes : "",
+                };
+              }),
+          },
+        }),
+      ),
+    );
+
+  return Effect.gen(function* () {
+    const retried = yield* publish(`origin\t${CLONE_URLS.sshUrl} (fetch)\n`);
+    assert.strictEqual(retried.status, "pushed");
+    assert.strictEqual(retried.repository.nameWithOwner, "octocat/t3code");
+    assert.deepInclude(gitArgs, ["remote", "set-url", "origin", CLONE_URLS.url]);
+
+    const taken = yield* Effect.flip(publish("upstream\thttps://github.com/other/repo (fetch)\n"));
+    assert.instanceOf(taken, SourceControlRepositoryError);
+    assert.strictEqual(taken.detail, "octocat/t3code already exists. Choose another name.");
+  });
+});
 
 it.effect("publish succeeds with status remote_added when the local repo has no commits", () => {
   let pushCalls = 0;

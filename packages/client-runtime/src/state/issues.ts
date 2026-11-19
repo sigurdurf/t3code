@@ -284,7 +284,7 @@ export function createIssueEnvironmentAtoms<R, E>(
     candidates: createEnvironmentRpcQueryAtomFamily(runtime, {
       label: "environment-data:issues:candidates",
       tag: WS_METHODS.issuesCandidates,
-      staleTimeMs: 60_000,
+      staleTimeMs: 0,
     }),
     create: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:issues:create",

@@ -33,6 +33,7 @@ import {
 import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
 import * as SourceControlProvider from "@t3tools/source-control-core/server/SourceControlProvider";
 import * as SourceControlProviderRegistry from "./SourceControlProviderRegistry.ts";
+import { sourceControlDefinitions } from "./sourceControlDefinitions.ts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import { cloneUrlForProtocol, cloneUrlProtocol } from "@t3tools/shared/cloneUrl";
 const isSourceControlRepositoryError = Schema.is(SourceControlRepositoryError);
@@ -489,17 +490,64 @@ export const make = Effect.gen(function* () {
         provider: input.provider,
       });
       const provider = yield* providers.get(providerKind);
-      const urls = yield* provider.createRepository({
-        cwd: input.cwd,
-        repository: input.repository.trim(),
-        visibility: input.visibility,
+      const repository = input.repository.trim();
+      // A retry after a failed push finds the repository it created already linked to a remote.
+      const reuseLinkedRepository = Effect.fn(
+        "SourceControlRepositoryService.publishRepository.reuseLinkedRepository",
+      )(function* (createError: SourceControlProviderError) {
+        const existing = yield* provider
+          .getRepositoryCloneUrls({ cwd: input.cwd, repository })
+          .pipe(Effect.mapError(() => createError));
+        const existingKeys = new Set(
+          [existing.url, existing.sshUrl].map(sourceControlDefinitions.repositoryKeyFromRemote),
+        );
+        const remotes = yield* git
+          .execute({
+            operation: "SourceControlRepositoryService.publishRepository.listRemotes",
+            cwd: input.cwd,
+            args: ["remote", "-v"],
+          })
+          .pipe(Effect.orElseSucceed(() => ({ stdout: "" })));
+        const isLinked = remotes.stdout
+          .split("\n")
+          .map((line) => line.split(/\s+/u)[1])
+          .some(
+            (url) =>
+              url !== undefined &&
+              existingKeys.has(sourceControlDefinitions.repositoryKeyFromRemote(url)),
+          );
+        if (isLinked) return existing;
+        return yield* new SourceControlRepositoryError({
+          operation: "publishRepository",
+          provider: providerKind,
+          detail: `${existing.nameWithOwner} already exists. Choose another name.`,
+          cause: createError,
+        });
       });
+      const { urls, linked } = yield* provider
+        .createRepository({ cwd: input.cwd, repository, visibility: input.visibility })
+        .pipe(
+          Effect.map((created) => ({ urls: created, linked: false })),
+          Effect.catch((createError) =>
+            reuseLinkedRepository(createError).pipe(
+              Effect.map((existing) => ({ urls: existing, linked: true })),
+            ),
+          ),
+        );
       const remoteUrl = selectRemoteUrl(urls, input.protocol);
       const remoteName = yield* git.ensureRemote({
         cwd: input.cwd,
         preferredName: input.remoteName?.trim() || "origin",
         url: remoteUrl,
       });
+      // The linked remote keeps the earlier attempt's protocol; the retry may have switched it.
+      if (linked) {
+        yield* git.execute({
+          operation: "SourceControlRepositoryService.publishRepository.setRemoteUrl",
+          cwd: input.cwd,
+          args: ["remote", "set-url", remoteName, remoteUrl],
+        });
+      }
 
       // Empty repos cannot push HEAD; report partial success because the remote already exists.
       const hasCommits = yield* git
