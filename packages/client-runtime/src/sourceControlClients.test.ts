@@ -66,6 +66,7 @@ describe("sourceControlClients.parseChangeRequestUrl", () => {
       repository: "team/repo",
       number: 7,
     });
+    expect(kindOf("https://gice.example.com/team/repo/pulls/7")).toBe("gice");
   });
 
   it("reads a GitHub pull request on any host, so GitHub Enterprise works on its own name", () => {
@@ -276,6 +277,7 @@ describe("sourceControlClients.recognizeRemote", () => {
     expect(kindOfRemote("https://bitbucket.visualstudio.com/p/_git/r")).toBe("azure-devops");
     expect(kindOfRemote("git@git.cafe:pingdotgg/t3code.git")).toBe("gitcafe");
     expect(kindOfRemote("https://origin.cursor.com/acme/web.git")).toBe("cursor-origin");
+    expect(kindOfRemote("git@gice.gitea.example:o/r.git")).toBe("gice");
   });
 
   it("reads a remote no host claims as an unknown host, and a local path as no host", () => {

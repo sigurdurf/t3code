@@ -368,6 +368,11 @@ export interface PullRequestProviderApi {
   readonly kind: SourceControlProviderKind;
   readonly capabilities: PullRequestCapabilities;
   /**
+   * For a kind whose servers differ by version: what the one on `host` can do. Where present it
+   * replaces `capabilities` for every change request on that host.
+   */
+  readonly capabilitiesOnHost?: (host: string) => Effect.Effect<PullRequestCapabilities>;
+  /**
    * What a reader is told when this host cannot be read on the server: `missing` for no tool or
    * credential, `unauthenticated` for one the host refused. Absent means a generic sentence.
    */

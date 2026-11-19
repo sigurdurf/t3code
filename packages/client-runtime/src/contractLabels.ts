@@ -275,6 +275,14 @@ const INSTALL_HINTS = [
       variable: "CAFE_TOKEN",
     },
   ),
+  msg(
+    "Save your Gice server's address and an access token in Settings, set {host} and {token} on the server, or run {login}.",
+    {
+      host: "GICE_HOST",
+      token: "GICE_TOKEN",
+      login: "`gice auth login --host <server-url>`",
+    },
+  ),
 ];
 
 /** @public A source-control `installHint`, translated when it is one of the server's fixed hints. */

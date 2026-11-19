@@ -14,7 +14,7 @@ export function canReactPullRequestComment(
 ): boolean {
   return (
     detail.capabilities.reactions === true &&
-    !(detail.provider === "gitcafe" && comment.kind === "review")
+    !((detail.provider === "gitcafe" || detail.provider === "gice") && comment.kind === "review")
   );
 }
 

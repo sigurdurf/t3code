@@ -1845,6 +1845,44 @@ it.effect("checks and deletes a branch inside one verified credential", () =>
   }),
 );
 
+it.effect("offers and runs only what the server on a change request's host can do", () =>
+  Effect.gen(function* () {
+    let ran: string | null = null;
+    const declared = fakePullRequestProvider(SourceControlProviderKind.make("github"));
+    const service = yield* makeService({
+      projects: [project({ id: "p1", title: "web", workspaceRoot: "/a", repository: "acme/web" })],
+      providers: [
+        {
+          ...declared,
+          capabilitiesOnHost: () =>
+            Effect.succeed({ ...declared.capabilities, actions: ["close"], reactions: false }),
+          getChangeRequest: () => Effect.succeed(hostedChangeRequest("Body")),
+          runAction: (input) => {
+            ran = input.action;
+            return Effect.void;
+          },
+        },
+      ],
+    });
+    const reference = { projectId: "p1" as ProjectId, repository: "acme/web", number: 1 };
+
+    const listed = yield* service.list({ state: "open" });
+    assert.deepStrictEqual(listed.providers[0]?.actions, ["close"]);
+    assert.deepStrictEqual((yield* service.detail(reference)).capabilities.actions, ["close"]);
+
+    const error = yield* Effect.flip(service.runAction({ ...reference, action: "draft" }));
+    assert.include(error.message, "This host cannot draft a change request.");
+    assert.strictEqual(ran, null);
+    const reaction = yield* Effect.flip(
+      service.setReaction({ ...reference, content: "heart", reacted: true }),
+    );
+    assert.strictEqual(reaction._tag, "PullRequestOperationError");
+
+    yield* service.runAction({ ...reference, action: "close" });
+    assert.strictEqual(ran, "close");
+  }),
+);
+
 it.effect("refuses an action this viewer may not take, and says what access it takes", () =>
   Effect.gen(function* () {
     let ran: string | null = null;

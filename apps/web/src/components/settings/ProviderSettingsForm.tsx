@@ -124,6 +124,7 @@ const PACKAGE_FIELD_TEXT: ReadonlyMap<string, string> = new Map([
   ["Atlassian account email", msg("Atlassian account email")],
   ["API token", msg("API token")],
   ["Token", msg("Token", { $context: "settings field, an access token" })],
+  ["Server", msg("Server", { $context: "settings field, a server's address" })],
   [
     "Path to the Codex binary used by this instance.",
     msg("Path to the Codex binary used by this instance."),
@@ -238,6 +239,18 @@ const PACKAGE_FIELD_TEXT: ReadonlyMap<string, string> = new Map([
     "A git.cafe token, used before CAFE_TOKEN and the cafe login, so GitCafe works without the CLI signed in.",
     msg(
       "A git.cafe token, used before CAFE_TOKEN and the cafe login, so GitCafe works without the CLI signed in.",
+    ),
+  ],
+  [
+    "Your Gice server's address. Left empty, GICE_HOST or the server the gice CLI is signed in to is used.",
+    msg(
+      "Your Gice server's address. Left empty, GICE_HOST or the server the gice CLI is signed in to is used.",
+    ),
+  ],
+  [
+    "A Gice access token for that server, used before GICE_TOKEN and the gice login, so Gice works without the CLI signed in.",
+    msg(
+      "A Gice access token for that server, used before GICE_TOKEN and the gice login, so Gice works without the CLI signed in.",
     ),
   ],
   ["e.g. --chrome", msg("e.g. --chrome")],

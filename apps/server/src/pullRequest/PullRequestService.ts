@@ -550,6 +550,7 @@ function withRateLimitBackoff(
   const wrapped = {
     kind: api.kind,
     capabilities: api.capabilities,
+    ...(api.capabilitiesOnHost === undefined ? {} : { capabilitiesOnHost: api.capabilitiesOnHost }),
     ...(api.mergeMessageRewrite === undefined
       ? {}
       : { mergeMessageRewrite: api.mergeMessageRewrite }),
@@ -1035,8 +1036,20 @@ export const make = Effect.gen(function* () {
       }),
     );
 
-  // Azure derives organization from the checkout; require the matching repository.
+  const onItsHost = (project: SupportedProject): Effect.Effect<SupportedProject> =>
+    project.api.capabilitiesOnHost === undefined
+      ? Effect.succeed(project)
+      : project.api
+          .capabilitiesOnHost(project.host)
+          .pipe(
+            Effect.map((capabilities) => ({ ...project, api: { ...project.api, capabilities } })),
+          );
+
   const requireProject = (ref: PullRequestRef): Effect.Effect<SupportedProject, PullRequestError> =>
+    routeProject(ref).pipe(Effect.flatMap(onItsHost));
+
+  // Azure derives organization from the checkout; require the matching repository.
+  const routeProject = (ref: PullRequestRef): Effect.Effect<SupportedProject, PullRequestError> =>
     listWorkspaceProjects({ projectId: ref.projectId }).pipe(
       Effect.flatMap(({ supported }): Effect.Effect<SupportedProject, PullRequestError> => {
         const own = supported[0];
@@ -1397,10 +1410,20 @@ export const make = Effect.gen(function* () {
       if (result.viewer !== null) viewers[result.host] = result.viewer;
     }
 
+    const hostCapabilities = yield* Effect.forEach(
+      viewerResults,
+      (result) => {
+        const project = projects.find((project) => project.host === result.host);
+        // A host that did not answer for its viewer is not asked again for what it can do.
+        return project === undefined || result.viewer === null
+          ? Effect.succeed(project?.api.capabilities)
+          : onItsHost(project).pipe(Effect.map((onHost) => onHost.api.capabilities));
+      },
+      { concurrency: REPOSITORY_CONCURRENCY },
+    );
     const providers: ReadonlyArray<PullRequestProviderSummary> = [
-      ...viewerResults.map((result) => {
-        const capabilities = projects.find((project) => project.host === result.host)?.api
-          .capabilities;
+      ...viewerResults.map((result, index) => {
+        const capabilities = hostCapabilities[index];
         return {
           host: result.host,
           kind: result.kind,

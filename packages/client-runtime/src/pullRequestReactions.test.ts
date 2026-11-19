@@ -22,7 +22,7 @@ function reaction(overrides: Partial<PullRequestReaction> = {}): PullRequestReac
 }
 
 describe("comment reaction permissions", () => {
-  it("excludes only GitCafe review summaries from comment reactions", () => {
+  it("excludes only GitCafe and Gice review summaries from comment reactions", () => {
     const detail = {
       provider: SourceControlProviderKind.make("gitcafe"),
       capabilities: {
@@ -46,6 +46,12 @@ describe("comment reaction permissions", () => {
       ),
     ).toBe(true);
     expect(canReactPullRequestComment(detail, { kind: "review" })).toBe(false);
+    expect(
+      canReactPullRequestComment(
+        { ...detail, provider: SourceControlProviderKind.make("gice") },
+        { kind: "review" },
+      ),
+    ).toBe(false);
   });
 });
 

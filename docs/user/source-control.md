@@ -1,7 +1,7 @@
 # Source control
 
-T3 Code integrates with GitHub, GitLab, Forgejo, Gitea, Bitbucket, Azure DevOps, GitCafe, and Cursor
-Origin to clone and publish repositories, create pull requests, and review changes.
+T3 Code integrates with GitHub, GitLab, Forgejo, Gitea, Bitbucket, Azure DevOps, GitCafe, Cursor
+Origin, and Gice to clone and publish repositories, create pull requests, and review changes.
 
 ## Review turn changes
 
@@ -142,6 +142,23 @@ origin auth login
 If cloning or pushing asks for a username, run `origin auth setup-git` to point Git at the CLI's
 credentials again. Origin repositories use HTTPS and are published privately. Repositories mirrored
 from GitHub keep their pull requests on GitHub; open those from the GitHub remote.
+
+### Gice
+
+Install the `gice` CLI from your Gice server and sign in:
+
+```bash
+curl -fsSL https://your-server/install.sh | sh
+gice auth login --host https://your-server --username you
+```
+
+Alternatively, open **Settings → Source control & issues**, expand **Gice**, and enter your server's
+address and an access token. Or set `GICE_HOST` and `GICE_TOKEN` in the server's environment and restart it.
+Git push and clone also need an SSH key or Git credentials for that server; `gice auth setup-git`
+sets up the credentials.
+
+Reviews, line comments, reviewers, labels, reactions, drafts, and auto-merge need a current Gice
+server; an older one offers plain comments, merge, close, and reopen.
 
 ## Start, clone, or publish a project
 
@@ -291,8 +308,8 @@ running count. A tick belongs to the pull request rather than to a commit, so sc
 single commit keeps them. A file pushed to after you cleared it comes back marked **Changed**.
 
 On GitHub these are GitHub's own viewed marks, so a review carries between T3 Code and github.com
-in either direction. Forgejo, GitLab, Bitbucket, Azure DevOps, and Cursor Origin expose no record
-T3 Code can read, so the server you are connected to keeps them instead: they follow you across the
+in either direction. Forgejo, GitLab, Bitbucket, Azure DevOps, Cursor Origin, and Gice expose no
+record T3 Code can read, so the server you are connected to keeps them instead: they follow you across the
 apps connected to that server, but the host's own site will not show them, and the count reads **viewed in T3 Code**.
 
 On mobile, open a changed file and mark it viewed from its header. Viewed files collapse,

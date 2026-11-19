@@ -56,6 +56,14 @@ it.each([
 });
 
 it.each([
+  ["https://gice.sed.is/gice/gice/pulls/12", "ssh://git@gice.sed.is:2222/gice/gice.git", "gice"],
+  ["https://git.acme.test/acme/web/pulls/12", "git@gitea.acme.test:acme/web.git", "forgejo"],
+] as const)("gives %s and %s, which share Forgejo's routes, to %s", (url, remoteUrl, kind) => {
+  expect(sourceControlDefinitions.parseChangeRequestUrl(url)?.definition.kind).toBe(kind);
+  expect(sourceControlDefinitions.recognizeRemote(remoteUrl)?.kind).toBe(kind);
+});
+
+it.each([
   ["gh pr merge 19 --squash", [19]],
   ['gh pr merge "19" --squash', [19]],
   ['/bin/zsh -lc "gh pr merge 19"', [19]],
@@ -68,6 +76,7 @@ it.each([
   ["gh pr close https://github.com/o/r/pull/19 && gh pr merge 20", [19, 20]],
   ["glab mr merge https://gitlab.com/o/r/-/merge_requests/7", [7]],
   ["sleep 30; cafe pr merge 26271", [26271]],
+  ["gice pull close 7 && gice pr merge 8 --squash", [7, 8]],
   ["az repos pr update --id 19 --status completed", [19]],
   ["az repos pr update --id=19 --status=abandoned", [19]],
   ["gh pr merge --squash", "any"],
