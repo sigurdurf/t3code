@@ -93,6 +93,10 @@ function normalizePullRequestQuery<A>(
     });
 }
 
+// Picker wrappers drop with the picker, so each open remounts the query and reads the host again
+// (people add labels and collaborators there mid-session); the query's own cache still shows meanwhile.
+const PICKER_CANDIDATES_IDLE_TTL_MS = 0;
+
 function writableQuery<A, E>(
   source: Atom.Atom<AsyncResult.AsyncResult<A, E>>,
   idleTtlMs = 5 * 60_000,
@@ -118,9 +122,10 @@ function writableQueryFamily<A, E>(
     readonly environmentId: EnvironmentId;
     readonly input: PullRequestRef;
   }) => Atom.Atom<AsyncResult.AsyncResult<A, E>>,
+  idleTtlMs?: number,
 ) {
   const writable = Atom.family((source: Atom.Atom<AsyncResult.AsyncResult<A, E>>) =>
-    writableQuery(source),
+    writableQuery(source, idleTtlMs),
   );
   return normalizePullRequestQuery((target) => writable(family(target)));
 }
@@ -1018,15 +1023,20 @@ export function createPullRequestEnvironmentAtoms<R, E>(
       label: "environment-data:pull-requests:label-candidates",
       tag: WS_METHODS.pullRequestsLabelCandidates,
       execute: (input) => routedRequest(WS_METHODS.pullRequestsLabelCandidates, input),
-      staleTimeMs: 60_000,
+      staleTimeMs: 0,
     }),
+    PICKER_CANDIDATES_IDLE_TTL_MS,
   );
   const labelCandidates = normalizePullRequestQuery((target) =>
-    editedQuery(labelCandidateQueries(target), {
-      environmentId: target.environmentId,
-      concerns: (reference) => samePullRequest(target.input, reference),
-      edit: (value, edits) => edits.reduce(withLabelCandidateEdit, value),
-    }),
+    editedQuery(
+      labelCandidateQueries(target),
+      {
+        environmentId: target.environmentId,
+        concerns: (reference) => samePullRequest(target.input, reference),
+        edit: (value, edits) => edits.reduce(withLabelCandidateEdit, value),
+      },
+      PICKER_CANDIDATES_IDLE_TTL_MS,
+    ),
   );
   const labelEdit = (
     registry: AtomRegistry.AtomRegistry,
@@ -1068,8 +1078,9 @@ export function createPullRequestEnvironmentAtoms<R, E>(
       label: "environment-data:pull-requests:reviewer-candidates",
       tag: WS_METHODS.pullRequestsReviewerCandidates,
       execute: (input) => routedRequest(WS_METHODS.pullRequestsReviewerCandidates, input),
-      staleTimeMs: 60_000,
+      staleTimeMs: 0,
     }),
+    PICKER_CANDIDATES_IDLE_TTL_MS,
   );
   // Asked only when the menu's first page is not everybody, so a query cannot be answered from it.
   const reviewerSearch = createEnvironmentRpcQueryAtomFamily(runtime, {

@@ -2244,14 +2244,20 @@ export const makeGitVcsDriverCore = Effect.fn("makeGitVcsDriverCore")(function* 
     options?: { readonly knownOriginDefaultBranch: string | null },
   ) {
     const base = yield* resolveBaseBranchForNoUpstream(cwd, refName, options);
-    if (!base) {
+    // No base, such as a just-published repo's default branch: every commit the remote lacks is ahead.
+    const primaryRemoteName = base
+      ? null
+      : yield* resolvePrimaryRemoteName(cwd).pipe(Effect.orElseSucceed(() => null));
+    if (!base && !primaryRemoteName) {
       return 0;
     }
 
     const result = yield* executeGit(
       "GitVcsDriver.computeAheadCountAgainstBase",
       cwd,
-      ["rev-list", "--count", "--end-of-options", `${base.comparisonRef}..HEAD`],
+      base
+        ? ["rev-list", "--count", "--end-of-options", `${base.comparisonRef}..HEAD`]
+        : ["rev-list", "--count", "HEAD", "--not", `--remotes=${primaryRemoteName}`],
       { allowNonZeroExit: true },
     );
     if (result.exitCode !== 0) {

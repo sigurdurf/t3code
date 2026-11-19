@@ -5777,6 +5777,25 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
       }),
     );
 
+    it.effect("counts an unpushed default branch on an empty remote as ahead", () =>
+      Effect.gen(function* () {
+        const cwd = yield* makeTmpDir();
+        const remote = yield* makeTmpDir("git-vcs-driver-remote-");
+        yield* initRepoWithCommit(cwd);
+        yield* git(remote, ["init", "--bare"]);
+        yield* git(cwd, ["remote", "add", "origin", remote]);
+
+        const driver = yield* GitVcsDriver.GitVcsDriver;
+        const status = yield* driver.statusDetails(cwd);
+        assert.equal(status.hasUpstream, false);
+        assert.equal(status.aheadCount, 1);
+
+        yield* git(cwd, ["push", "origin", "HEAD"]);
+        yield* git(cwd, ["fetch", "origin"]);
+        assert.equal((yield* driver.statusDetails(cwd)).aheadCount, 0);
+      }),
+    );
+
     it.effect("reports combined staged and unstaged edits to the same file", () =>
       Effect.gen(function* () {
         const cwd = yield* makeTmpDir();
