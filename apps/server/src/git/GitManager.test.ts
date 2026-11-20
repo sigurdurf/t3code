@@ -86,6 +86,7 @@ interface FakeProviderScenario {
   kind?: string;
   /** False for a host that opens every change request ready for review. */
   createsDraftChangeRequests?: boolean;
+  takesSourceRepository?: boolean;
   /** Answers to successive change request listings, whatever their head selector. */
   prListSequence?: ReadonlyArray<ReadonlyArray<FakeChangeRequest>>;
   prListByHeadSelector?: Record<string, ReadonlyArray<FakeChangeRequest>>;
@@ -483,6 +484,7 @@ function createFakeSourceControlProvider(scenario: FakeProviderScenario = {}): {
     service: {
       kind,
       createsDraftChangeRequests: scenario.createsDraftChangeRequests ?? true,
+      ...(scenario.takesSourceRepository ? { takesSourceRepository: true } : {}),
       ...headBranchProbe,
       listChangeRequests: (input) =>
         record(input.cwd, {
@@ -5495,6 +5497,7 @@ it.layer(layerGitManagerTest)("GitManager", (it) => {
         const { manager, providerCalls } = yield* makeManager({
           providerScenario: {
             kind,
+            takesSourceRepository: kind === "gitlab",
             prListSequenceByHeadSelector: {
               statemachine: [
                 [],

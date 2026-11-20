@@ -118,6 +118,11 @@ export class SourceControlProvider extends Context.Service<
   SourceControlProvider,
   {
     readonly kind: SourceControlProviderKind;
+    /**
+     * `createChangeRequest` reads a fork head's `source.repository` as its `owner/name`, which
+     * names a renamed fork where the `owner:branch` selector cannot.
+     */
+    readonly takesSourceRepository?: boolean;
     /** The caller verifies owners, so hosts may drop unsupported `owner:branch` selectors. */
     readonly headBranchProbe?: (input: {
       readonly headSelectors: ReadonlyArray<string>;
