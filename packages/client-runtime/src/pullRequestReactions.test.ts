@@ -22,9 +22,9 @@ function reaction(overrides: Partial<PullRequestReaction> = {}): PullRequestReac
 }
 
 describe("comment reaction permissions", () => {
-  it("excludes only GitCafe review summaries from comment reactions", () => {
+  it("excludes review summaries only on hosts that say they take none", () => {
     const detail = {
-      provider: SourceControlProviderKind.make("gitcafe"),
+      provider: SourceControlProviderKind.make("github"),
       capabilities: {
         diff: true,
         comment: true,
@@ -32,20 +32,25 @@ describe("comment reaction permissions", () => {
         mergeMethods: [],
         search: true,
         reactions: true,
+        reviewReactions: false,
         review: { inlineComment: true, reply: true, resolve: true, verdicts: [] },
         reviewers: { request: true, listCandidates: true },
       },
     } satisfies Pick<PullRequestDetail, "provider" | "capabilities">;
+    const { reviewReactions: _, ...unreported } = detail.capabilities;
 
     expect(canReactPullRequestComment(detail, { kind: "issue-comment" })).toBe(true);
     expect(canReactPullRequestComment(detail, { kind: "review-comment" })).toBe(true);
+    expect(canReactPullRequestComment(detail, { kind: "review" })).toBe(false);
+    expect(
+      canReactPullRequestComment({ ...detail, capabilities: unreported }, { kind: "review" }),
+    ).toBe(true);
     expect(
       canReactPullRequestComment(
-        { ...detail, provider: SourceControlProviderKind.make("github") },
+        { provider: SourceControlProviderKind.make("gitcafe"), capabilities: unreported },
         { kind: "review" },
       ),
-    ).toBe(true);
-    expect(canReactPullRequestComment(detail, { kind: "review" })).toBe(false);
+    ).toBe(false);
   });
 });
 

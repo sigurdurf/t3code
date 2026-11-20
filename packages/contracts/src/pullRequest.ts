@@ -303,6 +303,8 @@ export const PullRequestCapabilities = Schema.Struct({
   updateMethods: Schema.optional(ForwardCompatibleArray(PullRequestUpdateMethod)),
   search: Schema.Boolean,
   reactions: Schema.optional(Schema.Boolean),
+  /** Review summaries take reactions as other comments do; only read where `reactions` is set. */
+  reviewReactions: Schema.optional(Schema.Boolean),
   viewedFiles: Schema.optional(PullRequestViewedFilesStore),
   review: PullRequestReviewCapabilities,
   reviewers: PullRequestReviewerCapabilities,
