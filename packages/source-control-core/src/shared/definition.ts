@@ -547,6 +547,18 @@ export function projectChangeRequestHost<const Kind extends string | undefined>(
   return host === undefined || host.length === 0 ? kind : host.toLowerCase();
 }
 
+/**
+ * For a self-hosted server, whose identity includes its port: the host of its web URL or HTTP
+ * remote, which name the port, else the repository key's.
+ */
+export function serverChangeRequestHost(identity: ChangeRequestHostIdentity, kind: string): string {
+  for (const value of [identity?.webUrl, identity?.locator?.remoteUrl]) {
+    const url = URL.parse(value ?? "");
+    if (url?.protocol === "http:" || url?.protocol === "https:") return url.host.toLowerCase();
+  }
+  return projectChangeRequestHost(identity, kind);
+}
+
 /** `projectHost` is the project's `changeRequestHost`. */
 export function isChangeRequestOnProjectHost(
   projectHost: string,

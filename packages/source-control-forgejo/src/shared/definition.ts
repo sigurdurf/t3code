@@ -12,7 +12,7 @@ import {
   parseIssuePath,
   parseCommitPath,
   repositoryUrlFromPagePath,
-  projectChangeRequestHost,
+  serverChangeRequestHost,
   remoteWebOrigin,
 } from "@t3tools/source-control-core/shared/definition";
 import { icon } from "./icon.ts";
@@ -54,20 +54,8 @@ function resolvedWebUrl(identity: ChangeRequestHostIdentity): URL | null {
   }
 }
 
-/** A server's identity includes its port, which only its web URL or an HTTP remote names. */
-function changeRequestHost(identity: ChangeRequestHostIdentity): string {
-  const web = resolvedWebUrl(identity);
-  if (web) return web.host.toLowerCase();
-  try {
-    const remote = new URL(identity?.locator?.remoteUrl ?? "");
-    if (remote.protocol === "http:" || remote.protocol === "https:") {
-      return remote.host.toLowerCase();
-    }
-  } catch {
-    // SSH remotes do not name the web server.
-  }
-  return projectChangeRequestHost(identity, KIND);
-}
+const changeRequestHost = (identity: ChangeRequestHostIdentity) =>
+  serverChangeRequestHost(identity, KIND);
 
 export const definition = defineSourceControl({
   kind: KIND,
