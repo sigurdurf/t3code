@@ -319,6 +319,11 @@ export interface SourceControlDefinition {
    * on a line of its own. Absent for a host with no such CLI.
    */
   readonly changeRequestCreateCommand?: RegExp;
+  /**
+   * Matches a shell command that prints other change requests' URLs with this host's CLI, such as
+   * a list or a raw API call. Absent for a host with no such CLI.
+   */
+  readonly changeRequestListCommand?: RegExp;
   readonly authorProfileUrl: (login: string, repositoryUrl: string) => string | null;
   /**
    * The references this host's own renderer links in plain text, such as `#12` or a commit SHA,

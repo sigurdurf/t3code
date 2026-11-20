@@ -90,8 +90,9 @@ const HEREDOC_BODY =
 const QUOTED_OR_COMMENT = /'[^']*'|"(?:\\[\s\S]|[^"\\])*"|(?<=^|[\s;&|(])#[^\n]*/gmu;
 const COMMAND_SEPARATOR = /&&|\|\||[;|\n]/u;
 // Commands that print other change requests' URLs, so output beside them proves nothing.
-const LISTS_CHANGE_REQUESTS =
-  /\b(?:gh\s+(?:pr\s+(?:list|status)|search\s+prs|api)|glab\s+(?:mr\s+list|api))\b/u;
+const LIST_COMMANDS = sourceControlDefinitions.definitions.flatMap(
+  ({ changeRequestListCommand: command }) => (command === undefined ? [] : [command]),
+);
 const URL_LINE = /^[ \t]*(https?:\/\/\S+)[ \t]*$/gmu;
 
 /** The script a shell input runs, unwrapped from Codex's `sh -lc`. */
@@ -161,7 +162,7 @@ export function changeRequestsCreatedBy(input: string, output: string) {
     .split(COMMAND_SEPARATOR)
     .filter((part) => createCommandCount(part) === 0)
     .join("\n");
-  if (LISTS_CHANGE_REQUESTS.test(otherCommands)) return [];
+  if (LIST_COMMANDS.some((command) => command.test(otherCommands))) return [];
   const otherScript = shellSegments(script)
     .filter((segment) => createCommandCount(shellCode(segment)) === 0)
     .join("\n");
