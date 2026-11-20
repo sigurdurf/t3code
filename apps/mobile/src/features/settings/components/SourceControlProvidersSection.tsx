@@ -1,5 +1,8 @@
 import { useAtomValue } from "@effect/atom-react";
-import { sourceControlInstallHintText } from "@t3tools/client-runtime/contract-labels";
+import {
+  sourceControlInstallHintText,
+  sourceControlTokenAccessText,
+} from "@t3tools/client-runtime/contract-labels";
 import { isSourceControlProviderOffered } from "@t3tools/client-runtime/operations/projects";
 import { squashAtomCommandFailure } from "@t3tools/client-runtime/state/runtime";
 import {
@@ -198,11 +201,7 @@ export function SourceControlTokenForm(props: {
   const gt = useGT();
   const { definition, credentials } = props;
   const { environmentId } = props.environment;
-  // Translates the GitHub definition's English `tokenAccess`, as the web settings do.
-  const tokenAccess =
-    definition.kind === "github"
-      ? gt("read and write access to pull requests and contents")
-      : credentials.tokenAccess;
+  const tokenAccess = sourceControlTokenAccessText(credentials.tokenAccess, useMessages());
   const { tokens } = readHostCredentialSettings(
     props.environment.serverConfig.settings,
     definition.kind,

@@ -293,6 +293,18 @@ const INSTALL_HINTS = [
   ),
 ];
 
+// Each host's `tokenAccess`, completing "Give it …".
+const TOKEN_ACCESS = [msg("read and write access to pull requests and contents")];
+
+/** @public A host's `tokenAccess`, translated when it is one of the hosts' fixed phrases. */
+export function sourceControlTokenAccessText(
+  access: string,
+  resolve: MFunctionType = mFallback,
+): string {
+  const known = TOKEN_ACCESS.find((entry) => mFallback(entry) === access);
+  return known === undefined ? access : resolve(known);
+}
+
 /** @public A source-control `installHint`, translated when it is one of the server's fixed hints. */
 export function sourceControlInstallHintText(
   hint: string,

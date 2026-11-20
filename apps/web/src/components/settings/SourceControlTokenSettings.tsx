@@ -4,11 +4,12 @@ import {
   type SecretReference,
   type SettingsSecretValue,
 } from "@t3tools/contracts";
-import { T, useGT, Var } from "gt-react";
+import { T, useGT, useMessages, Var } from "gt-react";
 import { ExternalLinkIcon } from "lucide-react";
 import { useState } from "react";
 
 import { useEnvironmentSettings } from "../../hooks/useSettings";
+import { sourceControlTokenAccessText } from "@t3tools/client-runtime/contract-labels";
 import {
   readHostCredentialSettings,
   type SourceControlDefinition,
@@ -36,11 +37,7 @@ export function SourceControlTokenSettings({
   readonly onSaved: () => void;
 }) {
   const gt = useGT();
-  // Translates the GitHub definition's English `tokenAccess`.
-  const tokenAccess =
-    definition.kind === "github"
-      ? gt("read and write access to pull requests and contents")
-      : credentials.tokenAccess;
+  const tokenAccess = sourceControlTokenAccessText(credentials.tokenAccess, useMessages());
   const { tokens } = useEnvironmentSettings(environmentId, (settings) =>
     readHostCredentialSettings(settings, definition.kind),
   );
