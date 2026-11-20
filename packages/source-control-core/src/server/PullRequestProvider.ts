@@ -386,6 +386,12 @@ export interface PullRequestProviderApi {
   /** Concurrent summary reads share requests, so callers may keep many in flight. */
   readonly batchesReads?: boolean;
   /**
+   * `getChangeRequest` reads the checks `getChangeRequestChecks` would, so a detail read answers
+   * for both; `when-found` where a failed checks read leaves the detail without any. Absent means
+   * a detail's checks never stand in for a checks read.
+   */
+  readonly detailChecks?: "complete" | "when-found";
+  /**
    * Absent means every host detected as this kind is read. A host it refuses is listed as one that
    * cannot be browsed here, and nothing is sent for it.
    */

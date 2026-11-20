@@ -367,6 +367,8 @@ export const make = Effect.gen(function* () {
   const provider: PullRequestProviderApi = {
     kind: SourceControlProviderKind.make("azure-devops"),
     capabilities: CAPABILITIES,
+    // A failed policy read answers with no checks.
+    detailChecks: "when-found",
     unavailableRequirement: UNAVAILABLE_REQUIREMENT,
     // The bare repository name repeats across an organization; the project path does not.
     repositoryKey: ({ canonicalKey }) => canonicalKey,

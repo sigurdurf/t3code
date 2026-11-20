@@ -3552,6 +3552,7 @@ it.effect("isolates routed caches for two credentials belonging to the same acco
         ],
         providers: [
           fakePullRequestProvider(SourceControlProviderKind.make("github"), {
+            detailChecks: "complete",
             capabilities: {
               ...fakePullRequestProvider(SourceControlProviderKind.make("github")).capabilities,
               viewedFiles: "host",
@@ -3817,6 +3818,7 @@ it.effect.each(["github", "azure-devops"])(
         ],
         providers: [
           fakePullRequestProvider(SourceControlProviderKind.make(provider), {
+            detailChecks: provider === "azure-devops" ? "when-found" : "complete",
             getChangeRequest: () =>
               Effect.succeed({
                 ...hostedChangeRequest("Description"),
@@ -3867,6 +3869,7 @@ it.effect("asks Azure for checks when its detail came back with none", () =>
       ],
       providers: [
         fakePullRequestProvider(SourceControlProviderKind.make("azure-devops"), {
+          detailChecks: "when-found",
           getChangeRequest: () => Effect.succeed(hostedChangeRequest("Description")),
           getChangeRequestChecks: () =>
             Effect.sync(() => {
