@@ -194,10 +194,9 @@ export function ComposerContextSheet(props: {
       ? record.pullRequest?.url
       : undefined;
   const term = changeRequestTermKind(
-    (
-      (pullRequestUrl ? sourceControlClients.findByChangeRequestUrl(pullRequestUrl) : undefined) ??
-      sourceControlClients.get(undefined)
-    ).changeRequest,
+    pullRequestUrl
+      ? sourceControlClients.changeRequestTerminology(pullRequestUrl)
+      : sourceControlClients.get(undefined).changeRequest,
   );
   const terminal = record?.kind === "terminal" && !("payload" in record) ? record : null;
   return (

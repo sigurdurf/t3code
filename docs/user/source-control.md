@@ -214,7 +214,10 @@ stack of its own. T3 Code does not delete a branch other pull requests are based
 when you delete it there.
 
 A repository whose remote is on a Gice server T3 Code has a credential for is always recognized, over
-HTTPS or SSH. Links to a server named like `gice.example.com` are always read as Gice links.
+HTTPS or SSH. Links to a server named like `gice.example.com` are always read as Gice links. On a
+server with another name, a linked pull request is read as Gice's when a project in the same
+environment, or one of the folders a project tracks, is on that server, and a link in a new thread's
+first message names the thread when the thread's own project is.
 
 ## Start, clone, or publish a project
 

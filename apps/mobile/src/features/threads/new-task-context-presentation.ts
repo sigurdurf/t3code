@@ -101,14 +101,16 @@ export function resolveNewTaskBranchLabel(
   resolve: MessageResolver = m,
 ): string {
   if (input.workspaceMode === "worktree" && input.pullRequestReference) {
-    const parsed = sourceControlClients.parseChangeRequestUrl(input.pullRequestReference);
-    if (parsed)
+    const link = sourceControlClients.parseChangeRequestLink(input.pullRequestReference);
+    if (link)
       return resolve(
         msg(
           "{term, select, mr {From MR #{number}} cr {From change request #{number}} other {From PR #{number}}}",
           {
-            term: changeRequestTermKind(parsed.definition.changeRequest),
-            number: parsed.link.number,
+            term: changeRequestTermKind(
+              sourceControlClients.changeRequestTerminology(input.pullRequestReference),
+            ),
+            number: link.number,
           },
         ),
       );

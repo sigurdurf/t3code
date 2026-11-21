@@ -151,10 +151,10 @@ export function usePullRequestScope(
     .join("|");
   // The URL is user-controlled and stands in for the PR link until detail loads.
   const selectedLink = search.selectedUrl
-    ? sourceControlClients.parseChangeRequestUrl(search.selectedUrl)?.link
-    : undefined;
+    ? sourceControlClients.parseChangeRequestLink(search.selectedUrl)
+    : null;
   const selectedUrl =
-    selectedLink !== undefined &&
+    selectedLink !== null &&
     selectedLink.number === search.number &&
     selectedLink.repository.toLowerCase() === search.repository?.toLowerCase()
       ? search.selectedUrl

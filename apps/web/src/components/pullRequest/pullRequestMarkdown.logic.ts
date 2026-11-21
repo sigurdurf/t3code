@@ -100,8 +100,9 @@ export function pullRequestMarkdownPlugins(
   changeRequest: { readonly provider: string; readonly url: string } | null,
 ): PluggableList {
   if (changeRequest === null) return NO_PLUGINS;
-  const repositoryUrl = sourceControlClients.parseChangeRequestUrl(changeRequest.url)?.link
-    .repositoryUrl;
+  const repositoryUrl = sourceControlClients.parseChangeRequestLink(
+    changeRequest.url,
+  )?.repositoryUrl;
   if (repositoryUrl === undefined) return NO_PLUGINS;
   const key = `${changeRequest.provider}\u0000${repositoryUrl}`;
   let plugins = markdownPlugins.get(key);

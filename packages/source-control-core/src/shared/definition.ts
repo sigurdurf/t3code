@@ -287,8 +287,11 @@ export interface SourceControlDefinition {
   readonly commitUrl?: (input: CommitUrlInput) => string | null;
   /** `known` is set when the caller already knows this host serves the URL's repository. */
   readonly parseCommitUrl?: (url: URL, known: boolean) => CommitLink | null;
-  /** Null when the URL is not one of this host's change requests. */
-  readonly parseChangeRequestUrl: (url: URL) => ParsedChangeRequestUrl | null;
+  /**
+   * Null when the URL is not one of this host's change requests. `known` is set when the caller
+   * already knows this host serves the URL.
+   */
+  readonly parseChangeRequestUrl: (url: URL, known: boolean) => ParsedChangeRequestUrl | null;
   /**
    * Null when the URL is not one of this host's issues. Absent for a host with none. `known` is
    * set when the caller already knows this host serves the URL's repository.
@@ -303,9 +306,10 @@ export interface SourceControlDefinition {
   /**
    * The change request URL a `reference` autolink might name, such as a GitHub `#123` written
    * through the issue route. Only a candidate: the caller must read it as a change request
-   * before treating it as one.
+   * before treating it as one. `known` is set when the caller already knows this host serves
+   * the URL.
    */
-  readonly changeRequestUrlFromReferenceAutolink: (url: URL) => string | null;
+  readonly changeRequestUrlFromReferenceAutolink: (url: URL, known: boolean) => string | null;
   /**
    * The actions this host can take on a change request, the same list its server provider
    * declares in `capabilities.actions`.
@@ -684,6 +688,21 @@ export const UNKNOWN_SOURCE_CONTROL_CLIENT: SourceControlDefinition = {
     isChangeRequestOnProjectHost(projectChangeRequestHost(identity, "unknown"), identity, link),
 };
 
+/** A project's repository, with the host its server detected it on. */
+export type ChangeRequestHostProject =
+  | (ChangeRequestProjectIdentity & { readonly provider?: SourceControlProviderKind | undefined })
+  | null
+  | undefined;
+
+/**
+ * The host each server the projects are on was detected as, keyed by `changeRequestHost`; null
+ * where two projects on one server disagree. Built by `changeRequestHosts`.
+ */
+export type ChangeRequestHosts = ReadonlyMap<string, SourceControlProviderKind | null>;
+
+/** For a caller with no projects to ask: links read by their route alone. */
+export const NO_CHANGE_REQUEST_HOSTS: ChangeRequestHosts = new Map();
+
 export interface ParsedChangeRequest {
   readonly definition: SourceControlDefinition;
   readonly link: ParsedChangeRequestUrl;
@@ -708,18 +727,48 @@ export interface SourceControlDefinitionRegistry {
    * `gist.github.com`: which host a link is on, not one T3 can read from.
    */
   readonly findByPublicDomain: (hostname: string) => SourceControlDefinition | undefined;
-  /** The first host, in registry order, that reads `url` as one of its change requests. */
-  readonly parseChangeRequestUrl: (url: string) => ParsedChangeRequest | null;
-  /** The first host, in registry order, that reads `url` as one of its issues, or `kind` alone. */
+  /**
+   * What the projects say about the servers they are on, for the readers below that name a
+   * link's host. Derive it once per set of projects, not per link.
+   */
+  readonly changeRequestHosts: (projects: Iterable<ChangeRequestHostProject>) => ChangeRequestHosts;
+  /**
+   * The change request `url` names. Every host that could serve it reads the same link fields from
+   * it, so this needs no projects; to know which host serves it, use `parseChangeRequestUrl`.
+   */
+  readonly parseChangeRequestLink: (url: string) => ParsedChangeRequestUrl | null;
+  /**
+   * The first host, in registry order, that reads `url` as one of its change requests. Where
+   * `hosts` knows the URL's server, that host reads it instead: a route alone cannot tell hosts
+   * apart that share it on any hostname, as Forgejo and Gice do.
+   */
+  readonly parseChangeRequestUrl: (
+    url: string,
+    hosts: ChangeRequestHosts,
+  ) => ParsedChangeRequest | null;
+  /** The first host in registry order that reads `url` as one of its issues, or `kind` alone. */
   readonly parseIssueUrl: (
     url: string,
     kind?: SourceControlProviderKind,
   ) => { readonly definition: SourceControlDefinition; readonly link: IssueLink } | null;
   readonly parseCommitUrl: (url: string, kind?: SourceControlProviderKind) => ParsedCommit | null;
-  readonly findByChangeRequestUrl: (url: string) => SourceControlDefinition | undefined;
-  readonly hostLabelForChangeRequestUrl: (url: string) => string;
+  /** `parseChangeRequestUrl`'s host. */
+  readonly findByChangeRequestUrl: (
+    url: string,
+    hosts: ChangeRequestHosts,
+  ) => SourceControlDefinition | undefined;
+  readonly hostLabelForChangeRequestUrl: (url: string, hosts: ChangeRequestHosts) => string;
+  /**
+   * What a change request at `url` is called. Every host that could serve `url` is asked, so no
+   * projects are needed: hosts that disagree give the generic term, and a URL no host reads
+   * gives the default host's.
+   */
+  readonly changeRequestTerminology: (url: string) => ChangeRequestTerminology;
   readonly isSameChangeRequest: (left: string, right: string) => boolean;
-  readonly changeRequestUrlFromReferenceAutolink: (url: string) => string | null;
+  readonly changeRequestUrlFromReferenceAutolink: (
+    url: string,
+    hosts: ChangeRequestHosts,
+  ) => string | null;
   /** The repository a page URL copied from a browser is in, such as a branch or file view. */
   readonly repositoryUrlFromPage: (url: string) => string | null;
   /**
@@ -750,6 +799,16 @@ export interface SourceControlDefinitionRegistry {
   ) => string | Kind;
   /** The first host, in registry order, that keeps `url` behind a credential. */
   readonly mediaUrl: (url: string) => SourceControlMedia | null;
+}
+
+/** One change request: the same server (port and all), repository and number. */
+function sameChangeRequestLink(left: ChangeRequestLink, right: ChangeRequestLink): boolean {
+  return (
+    left.host === right.host &&
+    left.repository === right.repository &&
+    left.number === right.number &&
+    left.authority === right.authority
+  );
 }
 
 function httpUrl(value: string): URL | null {
@@ -813,14 +872,54 @@ export function makeSourceControlDefinitionRegistry(
     identity?.provider === undefined
       ? defaultRepositorySelector(identity)
       : (byKind.get(identity.provider)?.repositorySelector ?? defaultRepositorySelector)(identity);
-  const parseChangeRequestUrl = (value: string): ParsedChangeRequest | null => {
-    const url = httpUrl(value);
-    if (url === null) return null;
+  const routeChangeRequest = (url: URL): ParsedChangeRequest | null => {
     for (const definition of claimOrder) {
-      const link = definition.parseChangeRequestUrl(url);
+      const link = definition.parseChangeRequestUrl(url, false);
       if (link !== null) return { definition, link };
     }
     return null;
+  };
+  /**
+   * The link fields `url` names. A route some host reads on any hostname answers first; else every
+   * host that would read it on a server a project vouches for is asked, and their fields count
+   * where they agree. So a link on a server named after no host does not depend on another host
+   * happening to read its route everywhere, as Forgejo reads `/pulls/` and Gice does not.
+   */
+  const changeRequestLink = (url: URL): ParsedChangeRequestUrl | null => {
+    const routed = routeChangeRequest(url);
+    if (routed !== null) return routed.link;
+    let agreed: ParsedChangeRequestUrl | null = null;
+    for (const definition of claimOrder) {
+      const link = definition.parseChangeRequestUrl(url, true);
+      if (link === null) continue;
+      if (agreed !== null && !sameChangeRequestLink(agreed, link)) return null;
+      agreed ??= link;
+    }
+    return agreed;
+  };
+  /** The host `hosts` says serves `authority` (port and all) or `host`, unless that is unclear. */
+  const knownHost = (hosts: ChangeRequestHosts, host: string, authority: string | undefined) => {
+    if (authority !== undefined && authority !== host) {
+      const byAuthority = hosts.get(authority);
+      if (byAuthority !== undefined) {
+        return byAuthority === null ? undefined : byKind.get(byAuthority);
+      }
+    }
+    const byHost = hosts.get(host);
+    return byHost === undefined || byHost === null ? undefined : byKind.get(byHost);
+  };
+  const parseChangeRequestUrl = (
+    value: string,
+    hosts: ChangeRequestHosts,
+  ): ParsedChangeRequest | null => {
+    const url = httpUrl(value);
+    if (url === null) return null;
+    if (hosts.size > 0) {
+      const owner = knownHost(hosts, url.hostname.toLowerCase(), url.host.toLowerCase());
+      const link = owner === undefined ? null : owner.parseChangeRequestUrl(url, true);
+      if (owner !== undefined && link !== null) return { definition: owner, link };
+    }
+    return routeChangeRequest(url);
   };
   const issueScope = (identity: IssueScopeIdentity | null | undefined) => {
     const scopeOf =
@@ -835,6 +934,17 @@ export function makeSourceControlDefinitionRegistry(
   ): string | Kind =>
     (kind === undefined ? undefined : byKind.get(kind)?.changeRequestHost?.(identity)) ??
     projectChangeRequestHost(identity, kind);
+  const changeRequestHosts = (projects: Iterable<ChangeRequestHostProject>) => {
+    const kinds = new Map<string, SourceControlProviderKind | null>();
+    for (const project of projects) {
+      const provider = project?.provider;
+      if (!project || provider === undefined || !byKind.has(provider)) continue;
+      const host = changeRequestHost(project, provider).toLowerCase();
+      const known = kinds.get(host);
+      kinds.set(host, known === undefined || known === provider ? provider : null);
+    }
+    return kinds.size === 0 ? NO_CHANGE_REQUEST_HOSTS : kinds;
+  };
   const issueBindings = (identity: RepositoryIdentity | null | undefined) => {
     const tracker = identity?.provider;
     if (!identity || tracker === undefined || tracker === "unknown") return [];
@@ -883,6 +993,11 @@ export function makeSourceControlDefinitionRegistry(
           (host === definition.publicHost || host.endsWith(`.${definition.publicHost}`)),
       );
     },
+    changeRequestHosts,
+    parseChangeRequestLink: (value) => {
+      const url = httpUrl(value);
+      return url === null ? null : changeRequestLink(url);
+    },
     parseChangeRequestUrl,
     parseIssueUrl: (value, kind) => {
       const url = httpUrl(value);
@@ -904,26 +1019,42 @@ export function makeSourceControlDefinitionRegistry(
       }
       return null;
     },
-    findByChangeRequestUrl: (url) => parseChangeRequestUrl(url)?.definition,
-    hostLabelForChangeRequestUrl: (url) =>
-      parseChangeRequestUrl(url)?.definition.label ?? "the host",
-    isSameChangeRequest: (left, right) => {
-      const a = parseChangeRequestUrl(left)?.link;
-      const b = parseChangeRequestUrl(right)?.link;
-      return (
-        a !== undefined &&
-        b !== undefined &&
-        a.host === b.host &&
-        a.repository === b.repository &&
-        a.number === b.number &&
-        a.authority === b.authority
-      );
+    findByChangeRequestUrl: (url, hosts) => parseChangeRequestUrl(url, hosts)?.definition,
+    hostLabelForChangeRequestUrl: (url, hosts) =>
+      parseChangeRequestUrl(url, hosts)?.definition.label ?? "the host",
+    changeRequestTerminology: (value) => {
+      const url = httpUrl(value);
+      const readers =
+        url === null
+          ? []
+          : claimOrder.filter((definition) => definition.parseChangeRequestUrl(url, true) !== null);
+      const terms = new Map<string, ChangeRequestTerminology>();
+      for (const { changeRequest: term } of readers) {
+        terms.set(
+          [term.shortLabel, term.shortLabelWithArticle, term.singular, term.plural].join("\0"),
+          term,
+        );
+      }
+      const [only, ...others] = terms.values();
+      if (only === undefined)
+        return (definitions[0] ?? UNKNOWN_SOURCE_CONTROL_CLIENT).changeRequest;
+      return others.length === 0 ? only : UNKNOWN_SOURCE_CONTROL_CLIENT.changeRequest;
     },
-    changeRequestUrlFromReferenceAutolink: (value) => {
+    isSameChangeRequest: (left, right) => {
+      const leftUrl = httpUrl(left);
+      const rightUrl = httpUrl(right);
+      const a = leftUrl === null ? null : changeRequestLink(leftUrl);
+      const b = rightUrl === null ? null : changeRequestLink(rightUrl);
+      return a !== null && b !== null && sameChangeRequestLink(a, b);
+    },
+    changeRequestUrlFromReferenceAutolink: (value, hosts) => {
       const url = httpUrl(value);
       if (url === null) return null;
+      const owner = knownHost(hosts, url.hostname.toLowerCase(), url.host.toLowerCase());
+      const known = owner?.changeRequestUrlFromReferenceAutolink(url, true) ?? null;
+      if (known !== null) return known;
       for (const definition of claimOrder) {
-        const candidate = definition.changeRequestUrlFromReferenceAutolink(url);
+        const candidate = definition.changeRequestUrlFromReferenceAutolink(url, false);
         if (candidate !== null) return candidate;
       }
       return null;

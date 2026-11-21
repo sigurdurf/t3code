@@ -29,8 +29,8 @@ export function createdPullRequestKey(
   if ((status !== "created" && status !== "opened_existing") || number === undefined || !url) {
     return null;
   }
-  const parsed = sourceControlDefinitions.parseChangeRequestUrl(url)?.link;
-  if (parsed !== undefined) {
+  const parsed = sourceControlDefinitions.parseChangeRequestLink(url);
+  if (parsed !== null) {
     return { host: parsed.host, repository: parsed.repository, number: parsed.number, url };
   }
   const kind = identity?.provider;

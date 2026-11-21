@@ -181,7 +181,7 @@ import {
 import { previewEnvironment } from "../state/preview";
 import { useAtomCommand } from "../state/use-atom-command";
 import { useAtomQueryRunner } from "../state/use-atom-query-runner";
-import { projectEnvironment } from "../state/projects";
+import { projectEnvironment, useChangeRequestHosts } from "../state/projects";
 import { filesystemEnvironment } from "../state/filesystem";
 import {
   findAgentDirectoryMatch,
@@ -684,6 +684,7 @@ function useChatMarkdownState({
         ? revealInFileExplorerLabelForKind(revealInFileManager, messages)
         : revealInFileExplorerLabelForOs(revealInFileManager, messages);
   const projects = useProjects();
+  const changeRequestHosts = useChangeRequestHosts(environmentId);
   const issueProjects = projects.filter((project) => project.environmentId === environmentId);
   // Only text naming a standalone tracker asks for its bindings, whose read probes the tracker.
   const issueTrackers =
@@ -755,14 +756,14 @@ function useChatMarkdownState({
       !pullRequestLinking.canLink(href)
     )
       return null;
-    const parsed = sourceControlClients.parseChangeRequestUrl(href)?.link;
-    return parsed === undefined ? null : { ...parsed, url: href };
+    const parsed = sourceControlClients.parseChangeRequestLink(href);
+    return parsed === null ? null : { ...parsed, url: href };
   };
   const linkedThreadPullRequestFor = (href: string) => {
     if (threadRef === undefined || !pullRequestLinking.isLinked(readThreadShell(threadRef), href))
       return null;
-    const parsed = sourceControlClients.parseChangeRequestUrl(href)?.link;
-    return parsed === undefined ? null : { ...parsed, url: href };
+    const parsed = sourceControlClients.parseChangeRequestLink(href);
+    return parsed === null ? null : { ...parsed, url: href };
   };
   const updateThreadPullRequestLink = async (href: string, linked: boolean) => {
     if (threadRef === undefined || (!linked && linkedThreadPullRequestFor(href) === null)) return;
@@ -1046,6 +1047,7 @@ function useChatMarkdownState({
     openExternalLinkInPreview,
     openMarkdownMedia,
     projects,
+    changeRequestHosts,
     issueProjects,
     issueTrackers,
     linkedThreadPullRequestFor,
@@ -1218,6 +1220,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
       linkTargetPreference,
       openExternalLinkInPreview,
       projects,
+      changeRequestHosts,
       issueProjects,
       issueTrackers,
       linkedThreadPullRequestFor,
@@ -1283,7 +1286,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
       const confirmBeforeOpen = pullRequestAutolink === "reference";
       const pullRequestCandidateUrl =
         confirmBeforeOpen && href
-          ? sourceControlClients.changeRequestUrlFromReferenceAutolink(href)
+          ? sourceControlClients.changeRequestUrlFromReferenceAutolink(href, changeRequestHosts)
           : href;
       const pullRequestPreviewTarget = pullRequestCandidateUrl
         ? resolvePullRequestPreviewTarget({

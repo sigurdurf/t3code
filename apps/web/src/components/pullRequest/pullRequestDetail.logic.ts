@@ -945,11 +945,9 @@ function boundedField(value: string): string {
   return bounded(value.replace(/\s+/gu, " "));
 }
 
-// Prompt builders are handed a change request's URL, not its detail; a URL no host claims reads
-// as the default host, as an unreported repository does.
+// Prompt builders are handed a change request's URL, not its detail.
 function terminologyForUrl(url: string): ChangeRequestTerminology {
-  return (sourceControlClients.findByChangeRequestUrl(url) ?? sourceControlClients.get(undefined))
-    .changeRequest;
+  return sourceControlClients.changeRequestTerminology(url);
 }
 
 function reviewThreadText(thread: PullRequestReviewThread): string {
@@ -1071,6 +1069,8 @@ export function buildFixFindingsHandoff(input: {
   readonly checks: ReadonlyArray<PullRequestCheck>;
   readonly commentsTruncated: boolean;
   readonly inThisThread?: boolean;
+  /** The host the detail came from, which its URL alone may not tell. */
+  readonly provider?: SourceControlProviderKind;
 }): FixFindingsHandoff {
   const threads = input.reviewThreads.filter(
     (thread) =>
@@ -1133,7 +1133,7 @@ export function buildFixFindingsHandoff(input: {
         : []),
       ...(input.commentsTruncated
         ? [
-            `The conversation was truncated; more review comments may exist on ${sourceControlClients.hostLabelForChangeRequestUrl(input.url)}.`,
+            `The conversation was truncated; more review comments may exist on ${input.provider === undefined ? "the host" : sourceControlClients.get(input.provider).label}.`,
           ]
         : []),
       ...(omitted > 0 ? [`${omitted} further findings were omitted.`] : []),
@@ -1733,8 +1733,8 @@ export function resolveDisplayedPullRequestDetail(input: {
     return null;
   }
   if (input.reference.host === undefined) return input.cached;
-  const link = sourceControlClients.parseChangeRequestUrl(input.cached.url)?.link;
-  return link !== undefined && (link.authority ?? link.host) === input.reference.host.toLowerCase()
+  const link = sourceControlClients.parseChangeRequestLink(input.cached.url);
+  return link !== null && (link.authority ?? link.host) === input.reference.host.toLowerCase()
     ? input.cached
     : null;
 }

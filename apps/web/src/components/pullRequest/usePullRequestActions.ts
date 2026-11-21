@@ -350,10 +350,9 @@ export function usePullRequestHandoffs({
   // Serialize all handoffs because they check out the same pull request.
   const [handoff, setHandoff] = useState<string | null>(null);
   // Prompt links hand over a URL alone, so the URL is what names the host.
-  const terminology = (
-    (detail && sourceControlClients.findByChangeRequestUrl(detail.url)) ||
-    sourceControlClients.get(undefined)
-  ).changeRequest;
+  const terminology = detail
+    ? sourceControlClients.changeRequestTerminology(detail.url)
+    : sourceControlClients.get(undefined).changeRequest;
 
   // Questions must not change checkouts or create worktrees.
   const openThreadWithTask = async (

@@ -1,5 +1,7 @@
+import { changeRequestLinkHost } from "@t3tools/client-runtime/change-request-links";
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import type {
+  EnvironmentId,
   PullRequestSummary,
   ThreadPullRequestKey,
   ThreadPullRequestLink,
@@ -7,6 +9,7 @@ import type {
 } from "@t3tools/contracts";
 import {
   sourceControlClients,
+  type ChangeRequestHosts,
   type ChangeRequestTerminology,
 } from "@t3tools/client-runtime/source-control-clients";
 import { changeRequestTermKind } from "../lib/changeRequestTerm";
@@ -86,8 +89,7 @@ export function presentThreadLinkedPullRequests(
   const link = resolveThreadCurrentPullRequestLink(links);
   const badge = resolveThreadPullRequestBadge(links);
   if (link === null || badge === null) return null;
-  const { changeRequest } =
-    sourceControlClients.findByChangeRequestUrl(link.url) ?? sourceControlClients.get(undefined);
+  const changeRequest = sourceControlClients.changeRequestTerminology(link.url);
   const snapshot = link.snapshot;
   const linkedCount = badge.kind === "pull-request" && badge.others > 0 ? badge.others + 1 : null;
   const isMultiple = badge.kind === "stack" || linkedCount !== null;
@@ -202,8 +204,9 @@ export function rememberBounded<V>(
 /** The newest summary held for `pullRequest`, matched strictly by host, repository and number. */
 export function knownPullRequestSummary(
   pullRequest: ThreadPullRequestKey,
-  threads: Iterable<Pick<EnvironmentThreadShell, "projectId" | "pullRequests">>,
+  threads: Iterable<Pick<EnvironmentThreadShell, "environmentId" | "projectId" | "pullRequests">>,
   summaries: Iterable<PullRequestSummary>,
+  hostsOf: (environmentId: EnvironmentId) => ChangeRequestHosts,
 ): PullRequestSummary | undefined {
   const key = threadPullRequestKeyOf(pullRequest);
   let newest:
@@ -233,10 +236,7 @@ export function knownPullRequestSummary(
         {
           ...snapshot,
           updatedAt: snapshot.updatedAt,
-          provider: (
-            sourceControlClients.findByChangeRequestUrl(link.url) ??
-            sourceControlClients.get(undefined)
-          ).kind,
+          provider: changeRequestLinkHost(link.url, hostsOf(thread.environmentId)).kind,
           projectId: thread.projectId,
           repository: link.repository,
           number: link.number,

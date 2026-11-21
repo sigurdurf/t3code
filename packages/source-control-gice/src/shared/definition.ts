@@ -169,8 +169,8 @@ export const definition = defineSourceControl({
   repositoryUrlFromPage: (url, known) =>
     known || isGiceHost(url.hostname) ? repositoryUrlFromPagePath(url, REPOSITORY_PAGE_PATH) : null,
   // `#12` names a pull request or an issue alike, and its issue route answers for either.
-  changeRequestUrlFromReferenceAutolink: (url) => {
-    const match = isGiceHost(url.hostname) ? ISSUE_PATH.exec(url.pathname) : null;
+  changeRequestUrlFromReferenceAutolink: (url, known) => {
+    const match = known || isGiceHost(url.hostname) ? ISSUE_PATH.exec(url.pathname) : null;
     if (match?.[1] === undefined || match[2] === undefined) return null;
     const candidate = new URL(url);
     candidate.pathname = `/${match[1]}/pulls/${match[2]}`;

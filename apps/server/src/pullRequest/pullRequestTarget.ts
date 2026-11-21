@@ -80,8 +80,8 @@ export const resolveTarget = Effect.fn("PullRequestsToolkit.resolveTarget")(func
   project: OrchestrationProjectShell | undefined,
 ) {
   if (input.url !== undefined) {
-    const parsed = sourceControlDefinitions.parseChangeRequestUrl(input.url)?.link;
-    if (parsed === undefined) {
+    const parsed = sourceControlDefinitions.parseChangeRequestLink(input.url);
+    if (parsed === null) {
       return yield* new PullRequestUrlInvalidError({});
     }
     return {

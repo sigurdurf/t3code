@@ -1,8 +1,10 @@
 import {
   CommandId,
   isOrchestrationV2WorkActive,
+  type OrchestrationProjectShell,
   type OrchestrationV2TurnItem,
   type PullRequestSummary,
+  type RepositoryIdentity,
   type ThreadId,
   type ThreadPullRequestKey,
   type ThreadPullRequestLink,
@@ -28,6 +30,7 @@ import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as Schedule from "effect/Schedule";
 import type * as Scope from "effect/Scope";
@@ -36,6 +39,8 @@ import * as Stream from "effect/Stream";
 
 import * as GitManager from "../git/GitManager.ts";
 import { PullRequestProviderError } from "@t3tools/source-control-core/server/PullRequestProvider";
+import * as ProjectEnrichmentService from "../project/ProjectEnrichmentService.ts";
+import * as ProjectService from "../project/ProjectService.ts";
 import * as PullRequestService from "../pullRequest/PullRequestService.ts";
 import { forkParked } from "../serverActivation.ts";
 import * as VcsProcess from "../vcs/VcsProcess.ts";
@@ -95,6 +100,9 @@ const LIST_COMMANDS = sourceControlDefinitions.definitions.flatMap(
 );
 const URL_LINE = /^[ \t]*(https?:\/\/\S+)[ \t]*$/gmu;
 
+const runsCreateCommand = (input: string) =>
+  CREATE_COMMANDS.some(({ command }) => command.test(input));
+
 /** The script a shell input runs, unwrapped from Codex's `sh -lc`. */
 function shellScript(input: string): string {
   const [, wrapped] = SHELL_WRAPPER.exec(input) ?? [];
@@ -152,8 +160,12 @@ type CommandExecution = Extract<OrchestrationV2TurnItem, { readonly type: "comma
  * does, existed before it ran. More URLs than create commands means something else printed
  * some, such as `gh pr list`, so none are taken.
  */
-export function changeRequestsCreatedBy(input: string, output: string) {
-  if (!CREATE_COMMANDS.some(({ command }) => command.test(input))) return [];
+export function changeRequestsCreatedBy(
+  input: string,
+  output: string,
+  projects?: RepositoryIdentity | ReadonlyArray<RepositoryIdentity | null | undefined> | null,
+) {
+  if (!runsCreateCommand(input)) return [];
   const script = shellScript(input);
   const code = shellCode(script);
   const creates = createCommandCount(code);
@@ -169,10 +181,14 @@ export function changeRequestsCreatedBy(input: string, output: string) {
   const creators = new Set(
     CREATE_COMMANDS.filter(({ run }) => code.match(run) !== null).map(({ kind }) => kind),
   );
+  const hosts = sourceControlDefinitions.changeRequestHosts(
+    Array.isArray(projects) ? projects : [projects],
+  );
   const created = new Map<string, ThreadPullRequestKey & { readonly url: string }>();
   for (const [, url = ""] of output.matchAll(URL_LINE)) {
-    const parsed = sourceControlDefinitions.parseChangeRequestUrl(url);
-    // Only the host whose create command ran can have printed a new change request.
+    // Only the host whose create command ran can have printed a new change request. The
+    // project says which host serves a server whose name does not.
+    const parsed = sourceControlDefinitions.parseChangeRequestUrl(url, hosts);
     if (parsed === null || !creators.has(parsed.definition.kind)) continue;
     const { link } = parsed;
     const named = new RegExp(`(?:^|(?<=[\\s#/=("']))${link.number}(?=$|[\\s);&|/"'])`, "u");
@@ -206,13 +222,16 @@ const pauseKeyOf = (entry: LinkEntry) => {
   return `${projectId}\0${host}`;
 };
 
-/** Another layer of the stack `url` belongs to, in its host's canonical shape. */
-function siblingChangeRequestUrl(url: string, number: number): string | null {
+/** Another layer of the stack `url` on `provider` belongs to, in its host's canonical shape. */
+function siblingChangeRequestUrl(
+  url: string,
+  number: number,
+  provider: PullRequestSummary["provider"],
+): string | null {
   if (!Number.isSafeInteger(number) || number < 1) return null;
-  const parsed = sourceControlDefinitions.parseChangeRequestUrl(url);
-  if (parsed === null) return null;
-  const { definition, link } = parsed;
-  return definition.changeRequestUrl({
+  const link = sourceControlDefinitions.parseChangeRequestLink(url);
+  if (link === null) return null;
+  return sourceControlDefinitions.get(provider).changeRequestUrl({
     host: link.host,
     repository: link.repository,
     number,
@@ -359,6 +378,8 @@ export class PullRequestSyncReactor extends Context.Service<
 export const make = Effect.gen(function* () {
   const engine = yield* Orchestrator.OrchestratorV2;
   const projections = yield* ProjectionStore.ProjectionStoreV2;
+  const projectService = yield* ProjectService.ProjectService;
+  const projectEnrichment = yield* ProjectEnrichmentService.ProjectEnrichmentService;
   const pullRequests = yield* PullRequestService.PullRequestService;
   const git = yield* GitManager.GitManager;
   const random = yield* SecureRandom.SecureRandom;
@@ -481,7 +502,7 @@ export const make = Effect.gen(function* () {
         ) {
           continue;
         }
-        const url = siblingChangeRequestUrl(link.url, layer.number);
+        const url = siblingChangeRequestUrl(link.url, layer.number, provider);
         if (url === null) continue;
         const uuid = yield* random.uuidV4();
         yield* engine.dispatch({
@@ -761,12 +782,40 @@ export const make = Effect.gen(function* () {
     Effect.catchCause(logSkipped("pull request refresh after link update skipped", {})),
   );
 
+  // The shell does not wait on git, and a created link is read once, so a folder whose identity
+  // the shell does not hold yet (right after a restart) waits on enrichment's lookup instead.
+  const repositoryIdentitiesOf = Effect.fn("PullRequestSyncReactor.repositoryIdentitiesOf")(
+    function* (project: OrchestrationProjectShell) {
+      const folders = project.trackedFolders ?? [];
+      const tracked = project.trackedRepositoryIdentities ?? [];
+      const root =
+        project.repositoryIdentity ??
+        (yield* projectEnrichment.readRepositoryIdentity(project.workspaceRoot));
+      return [
+        root,
+        ...(tracked.length === folders.length
+          ? tracked
+          : yield* Effect.forEach(
+              folders,
+              (folder) => projectEnrichment.readRepositoryIdentity(folder.path),
+              { concurrency: 4 },
+            )),
+      ];
+    },
+  );
+
   // An agent that opens a pull request from a shell gets it linked as link_pull_request would.
   const linkCreatedChangeRequests = Effect.fn("PullRequestSyncReactor.linkCreatedChangeRequests")(
     function* (threadId: ThreadId, item: CommandExecution) {
-      if (isOrchestrationV2WorkActive(item.status)) return;
+      if (isOrchestrationV2WorkActive(item.status) || !runsCreateCommand(item.input)) return;
+      const thread = yield* projections.getThreadShell(threadId);
+      const project =
+        thread === null
+          ? undefined
+          : Option.getOrUndefined(yield* projectService.getShell(thread.projectId));
+      const identities = project === undefined ? [] : yield* repositoryIdentitiesOf(project);
       yield* Effect.forEach(
-        changeRequestsCreatedBy(item.input, item.output ?? ""),
+        changeRequestsCreatedBy(item.input, item.output ?? "", identities),
         (created) =>
           engine
             .dispatch({
@@ -787,6 +836,14 @@ export const make = Effect.gen(function* () {
         { discard: true },
       );
     },
+    (effect, threadId) =>
+      effect.pipe(
+        Effect.catchCause(
+          logSkipped("reading the project of a command that created a pull request failed", {
+            threadId,
+          }),
+        ),
+      ),
   );
 
   // A push can start new checks, so the thread's watches forget whether checks were running and

@@ -351,8 +351,9 @@ export function changeRequestReferenceAutolinker(
 ): ((text: string) => ReadonlyArray<ReferenceAutolink>) | null {
   if (!changeRequest) return null;
   const find = sourceControlClients.get(changeRequest.provider).referenceAutolinks;
-  const repositoryUrl = sourceControlClients.parseChangeRequestUrl(changeRequest.url)?.link
-    .repositoryUrl;
+  const repositoryUrl = sourceControlClients.parseChangeRequestLink(
+    changeRequest.url,
+  )?.repositoryUrl;
   return find === undefined || repositoryUrl === undefined
     ? null
     : (text) => find(text, repositoryUrl);

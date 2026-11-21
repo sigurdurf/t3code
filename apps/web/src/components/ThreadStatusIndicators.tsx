@@ -24,6 +24,9 @@ import { m, type MessageResolver } from "../i18n/messages";
 import { useEnvironment, usePrimaryEnvironmentId } from "../state/environments";
 import { EnvironmentMachineIcon } from "./EnvironmentMachineIcon";
 import { useProject } from "../state/entities";
+import { useChangeRequestHosts } from "../state/projects";
+import { changeRequestLinkHost } from "@t3tools/client-runtime/change-request-links";
+import type { ChangeRequestHosts } from "@t3tools/client-runtime/source-control-clients";
 import {
   pullRequestListLines,
   resolveThreadCurrentPullRequestLink,
@@ -94,7 +97,8 @@ export function useLinkedThreadPullRequest(
 ): LinkedThreadPullRequestStatus | null {
   const supportsLinks = useSupportsMultiplePullRequests(environmentId);
   const current = supportsLinks ? resolveThreadCurrentPullRequestLink(pullRequests ?? []) : null;
-  const currentStatus = current === null ? null : linkedPullRequestSnapshotStatus(current);
+  const hosts = useChangeRequestHosts(environmentId);
+  const currentStatus = current === null ? null : linkedPullRequestSnapshotStatus(current, hosts);
   const fallback =
     current === null ? ((!supportsLinks ? linkedPullRequest : null) ?? branchPullRequest) : null;
   // Preserve reference identity so sidebar renders do not touch the summary cache.
@@ -158,23 +162,24 @@ export function useThreadDisplayedPullRequest(
 }
 
 function linkedPullRequestReference(fallback: ThreadLinkedPullRequest) {
-  const host = sourceControlClients.parseChangeRequestUrl(fallback.url)?.link.host;
+  const host = sourceControlClients.parseChangeRequestLink(fallback.url)?.host;
   return { ...fallback, ...(host === undefined ? {} : { host }) };
 }
 
 function changeRequestTerminologyForUrl(url: string | undefined) {
-  const host = url === undefined ? null : sourceControlClients.findByChangeRequestUrl(url);
-  return (host ?? sourceControlClients.get(undefined)).changeRequest;
+  return url === undefined
+    ? sourceControlClients.get(undefined).changeRequest
+    : sourceControlClients.changeRequestTerminology(url);
 }
 
+/** `hosts` are the link's environment's. */
 export function linkedPullRequestSnapshotStatus(
   link: ThreadPullRequestLink,
+  hosts: ChangeRequestHosts,
 ): LinkedThreadPullRequestStatus | null {
   const snapshot = link.snapshot;
   if (snapshot === null) return null;
-  const kind = (
-    sourceControlClients.findByChangeRequestUrl(link.url) ?? sourceControlClients.get(undefined)
-  ).kind;
+  const { kind } = changeRequestLinkHost(link.url, hosts);
   return {
     pr: {
       number: link.number,

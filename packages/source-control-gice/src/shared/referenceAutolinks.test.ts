@@ -24,13 +24,16 @@ describe("giceReferenceAutolinks", () => {
     },
   );
 
-  it("offers the pull request a #N on a Gice-named server may name", () => {
-    const candidate = (url: string) =>
-      definition.changeRequestUrlFromReferenceAutolink(new URL(url));
+  it("offers the pull request a #N on a Gice-named or known Gice server may name", () => {
+    const candidate = (url: string, known = false) =>
+      definition.changeRequestUrlFromReferenceAutolink(new URL(url), known);
     expect(candidate("https://gice.example.com/team/repo/issues/12")).toBe(
       "https://gice.example.com/team/repo/pulls/12",
     );
     expect(candidate("https://git.example.com/team/repo/issues/12")).toBeNull();
+    expect(candidate("https://git.example.com/team/repo/issues/12", true)).toBe(
+      "https://git.example.com/team/repo/pulls/12",
+    );
     expect(candidate("https://github.com/team/repo/issues/12")).toBeNull();
   });
 });

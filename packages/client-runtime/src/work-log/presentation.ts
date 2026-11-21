@@ -201,11 +201,14 @@ function resolveT3McpToolPresentation(
   const payload = asRecord(data);
   const input =
     asRecord(payload?.arguments) ?? asRecord(payload?.input) ?? asRecord(payload?.rawInput);
-  const urlTarget =
-    typeof input?.url === "string" ? sourceControlClients.parseChangeRequestUrl(input.url) : null;
-  const number = urlTarget?.link.number ?? input?.number;
-  const { shortLabel } = (urlTarget?.definition ?? sourceControlClients.get(undefined))
-    .changeRequest;
+  const url = typeof input?.url === "string" ? input.url : null;
+  const number =
+    (url === null ? null : sourceControlClients.parseChangeRequestLink(url))?.number ??
+    input?.number;
+  const { shortLabel } =
+    url === null
+      ? sourceControlClients.get(undefined).changeRequest
+      : sourceControlClients.changeRequestTerminology(url);
   const pullRequestNumber =
     actionKind !== undefined &&
     actionKind !== "list-prs" &&

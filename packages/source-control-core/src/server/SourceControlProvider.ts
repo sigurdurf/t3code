@@ -21,6 +21,8 @@ export interface SourceControlLinkSubject {
 export type ResolveSourceControlLink = (input: {
   readonly cwd: string;
   readonly url: URL;
+  /** `cwd`'s host, when the caller has it: its server is known to be that host's. */
+  readonly context?: SourceControlProviderContext | null;
 }) => Effect.Effect<SourceControlLinkSubject, SourceControlProviderError> | undefined;
 
 export interface SourceControlProviderContext {

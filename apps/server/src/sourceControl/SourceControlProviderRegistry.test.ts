@@ -40,10 +40,11 @@ class NotAnswered extends Schema.TaggedError<NotAnswered>()("NotAnswered", {}) {
 const linkSubject = (host: string) => () =>
   Effect.succeed({ title: `${host} subject`, body: null });
 
-/** Only GitHub and GitLab read linked subjects, as in production. */
+/** Only GitHub, GitLab and Gice read linked subjects, as in production. */
 const PROVIDERS = [
   fakeSourceControlProvider("github", { resolveLink: linkSubject("github") }),
   fakeSourceControlProvider("gitlab", { resolveLink: linkSubject("gitlab") }),
+  fakeSourceControlProvider("gice", { resolveLink: linkSubject("gice") }),
   fakeSourceControlProvider("forgejo"),
   fakeSourceControlProvider("bitbucket"),
   fakeSourceControlProvider("azure-devops"),
@@ -220,6 +221,48 @@ it.effect("routes an unknown remote to an API host that claims its server", () =
     assert.deepStrictEqual(item?.version, Option.some("1.2.3"));
     assert.notProperty(item?.auth, "version");
   }),
+);
+
+it.effect(
+  "routes linked subjects on the checkout's own server to its host, whatever its name",
+  () =>
+    Effect.gen(function* () {
+      const registry = yield* makeRegistry({
+        remotes: [{ name: "origin", url: "git@git.example.test:team/project.git" }],
+        discovery: [
+          {
+            type: "api",
+            kind: kind("gice"),
+            label: "Gice",
+            installHint: "unused",
+            probeAuth: Effect.die("unused"),
+            refineUnknownRemote: () =>
+              Effect.succeed({
+                kind: kind("gice"),
+                name: "Gice",
+                baseUrl: "https://git.example.test",
+              }),
+          },
+        ],
+      });
+      const { context } = yield* registry.resolveHandle({ cwd: "/repo" });
+      const resolve = (url: string, withContext = true) =>
+        registry.resolveLink({
+          cwd: "/repo",
+          url: new URL(url),
+          ...(withContext ? { context } : {}),
+        });
+
+      const own = resolve("https://git.example.test/team/other/pulls/3");
+      assert.ok(own);
+      assert.deepStrictEqual(yield* own, { title: "gice subject", body: null });
+      const named = resolve("https://gice.example.test/team/project/pulls/3", false);
+      assert.ok(named);
+      assert.deepStrictEqual(yield* named, { title: "gice subject", body: null });
+      assert.strictEqual(resolve("https://git.example.test/team/other/pulls/3", false), undefined);
+      assert.strictEqual(resolve("https://code.example.test/team/project/pulls/3"), undefined);
+      assert.strictEqual(resolve("https://git.example.test:8443/team/project/pulls/3"), undefined);
+    }),
 );
 
 it.effect("leaves a remote no integration claims unknown, with its server's address", () =>

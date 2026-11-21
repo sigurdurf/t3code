@@ -4,9 +4,26 @@ import type {
   PullRequestRef,
   RepositoryIdentity,
 } from "@t3tools/contracts";
-import type { ChangeRequestLink } from "@t3tools/source-control-core/shared/definition";
+import type {
+  ChangeRequestHosts,
+  ChangeRequestLink,
+  SourceControlDefinition,
+} from "@t3tools/source-control-core/shared/definition";
 
 import { sourceControlClients } from "./sourceControlClients.ts";
+
+/**
+ * The host of a change request link from an environment, as its server detected the projects on
+ * that link's host (`changeRequestHostsAtom`), else the default host.
+ */
+export function changeRequestLinkHost(
+  url: string,
+  hosts: ChangeRequestHosts,
+): SourceControlDefinition {
+  return (
+    sourceControlClients.findByChangeRequestUrl(url, hosts) ?? sourceControlClients.get(undefined)
+  );
+}
 
 interface ChangeRequestProject {
   readonly id: ProjectId;
@@ -74,8 +91,8 @@ export function resolveChangeRequestLinkTarget<Project extends ChangeRequestProj
   readonly number: number;
   readonly host?: string;
 } | null {
-  const link = sourceControlClients.parseChangeRequestUrl(url)?.link;
-  if (link === undefined) return null;
+  const link = sourceControlClients.parseChangeRequestLink(url);
+  if (link === null) return null;
   // Matching remotes do not make project ids usable outside the link's environment.
   const candidates = (
     environmentId === undefined
@@ -111,8 +128,8 @@ export function resolvePullRequestPreviewTarget({
   url: string;
 }): { environmentId: EnvironmentId; input: PullRequestRef } | null {
   if (!pullRequestsEnabled || environmentId === null) return null;
-  const parsed = sourceControlClients.parseChangeRequestUrl(url)?.link;
-  if (parsed === undefined) return null;
+  const parsed = sourceControlClients.parseChangeRequestLink(url);
+  if (parsed === null) return null;
   const project = findProjectForChangeRequest(
     projects.filter((candidate) => candidate.environmentId === environmentId),
     parsed,

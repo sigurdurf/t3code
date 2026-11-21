@@ -6,7 +6,13 @@ import type {
   ScopedProjectRef,
   ServerConfig,
 } from "@t3tools/contracts";
+import {
+  NO_CHANGE_REQUEST_HOSTS,
+  type ChangeRequestHosts,
+} from "@t3tools/source-control-core/shared/definition";
 import { Atom } from "effect/reactivity";
+
+import { sourceControlClients } from "../sourceControlClients.ts";
 
 import type { EnvironmentProject } from "./models.ts";
 import { scopeProject } from "./models.ts";
@@ -16,6 +22,15 @@ import { arrayElementsEqual, parseProjectKey, projectKey, projectRefsEqual } fro
 
 const EMPTY_PROJECTS: ReadonlyArray<OrchestrationProjectShell> = Object.freeze([]);
 const EMPTY_PROJECT_INDEX: ReadonlyMap<ProjectId, OrchestrationProjectShell> = new Map();
+const NO_ENVIRONMENT_HOSTS_ATOM = Atom.make(NO_CHANGE_REQUEST_HOSTS);
+
+function sameHosts(left: ChangeRequestHosts, right: ChangeRequestHosts): boolean {
+  if (left.size !== right.size) return false;
+  for (const [host, kind] of left) {
+    if (right.get(host) !== kind) return false;
+  }
+  return true;
+}
 
 export function createEnvironmentProjectAtoms(input: {
   readonly catalogValueAtom: Atom.Atom<EnvironmentCatalogState>;
@@ -42,6 +57,21 @@ export function createEnvironmentProjectAtoms(input: {
       return new Map(projects.map((project) => [project.id, project] as const));
     }).pipe(Atom.withLabel(`environment-project-index:${environmentId}`)),
   );
+
+  // Kept while the projects' servers stay the same, so link readers skip other project changes.
+  const environmentChangeRequestHostsAtom = Atom.family((environmentId: EnvironmentId) => {
+    let previous = NO_CHANGE_REQUEST_HOSTS;
+    return Atom.make((get) => {
+      const next = sourceControlClients.changeRequestHosts(
+        get(environmentProjectsAtom(environmentId)).flatMap((project) => [
+          project.repositoryIdentity,
+          ...(project.trackedRepositoryIdentities ?? []),
+        ]),
+      );
+      if (!sameHosts(previous, next)) previous = next;
+      return previous;
+    }).pipe(Atom.withLabel(`environment-change-request-hosts:${environmentId}`));
+  });
 
   const environmentProjectRefsAtom = Atom.family((environmentId: EnvironmentId) => {
     let previous: ReadonlyArray<ScopedProjectRef> = [];
@@ -130,6 +160,11 @@ export function createEnvironmentProjectAtoms(input: {
     environmentProjectsAtom,
     environmentProjectIndexAtom,
     environmentProjectRefsAtom,
+    /** What the environment's projects say about the servers its change request links are on. */
+    changeRequestHostsAtom: (environmentId: EnvironmentId | null) =>
+      environmentId === null
+        ? NO_ENVIRONMENT_HOSTS_ATOM
+        : environmentChangeRequestHostsAtom(environmentId),
     projectRefsAtom,
     projectsAtom,
     projectConfigsReadyAtom,

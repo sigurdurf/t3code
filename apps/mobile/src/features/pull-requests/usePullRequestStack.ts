@@ -23,8 +23,7 @@ export function usePullRequestStack(params: PullRequestParams, pr: PullRequestDe
     () => ({
       ...pullRequestTarget(params).input,
       host:
-        params.host ??
-        (pr ? sourceControlClients.parseChangeRequestUrl(pr.url)?.link.host : undefined),
+        params.host ?? (pr ? sourceControlClients.parseChangeRequestLink(pr.url)?.host : undefined),
     }),
     [params, pr],
   );

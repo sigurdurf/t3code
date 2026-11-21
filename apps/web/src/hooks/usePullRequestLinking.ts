@@ -38,27 +38,23 @@ export function usePullRequestLinking(environmentId: EnvironmentId | null | unde
   const link = useAtomCommand(threadEnvironment.linkPullRequest, { reportFailure: false });
   const unlink = useAtomCommand(threadEnvironment.unlinkPullRequest, { reportFailure: false });
   const canLink = (url: string) =>
-    mode !== "unsupported" && sourceControlClients.parseChangeRequestUrl(url) !== null;
+    mode !== "unsupported" && sourceControlClients.parseChangeRequestLink(url) !== null;
   const isLinked = (
     thread: { readonly pullRequests?: readonly ThreadPullRequestLink[] } | null,
     url: string,
   ) => {
     if (thread === null || mode === "unsupported") return false;
-    const parsed = sourceControlClients.parseChangeRequestUrl(url)?.link;
+    const parsed = sourceControlClients.parseChangeRequestLink(url);
     return (
-      parsed !== undefined &&
+      parsed !== null &&
       visibleThreadPullRequests(thread.pullRequests ?? []).some((entry) =>
         threadPullRequestKeysEqual(entry, parsed),
       )
     );
   };
   const changeLink = async (threadRef: ScopedThreadRef, url: string, linked: boolean) => {
-    const parsed = sourceControlClients.parseChangeRequestUrl(url)?.link;
-    if (
-      parsed === undefined ||
-      threadRef.environmentId !== environmentId ||
-      (linked && !canLink(url))
-    )
+    const parsed = sourceControlClients.parseChangeRequestLink(url);
+    if (parsed === null || threadRef.environmentId !== environmentId || (linked && !canLink(url)))
       throw new Error(m(msg("The pull request is not available in this environment.")));
     const mutation = planThreadPullRequestMutation({
       capabilities: appAtomRegistry.get(environmentServerConfigsAtom).get(threadRef.environmentId)

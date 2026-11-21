@@ -24,6 +24,7 @@ import {
 
 import type { ComposerThreadTarget } from "~/composerDraftStore";
 import { useProjects, useQuietThreadShell } from "~/state/entities";
+import { useChangeRequestHosts } from "~/state/projects";
 import { threadEnvironment } from "~/state/threads";
 import { useAtomCommand } from "~/state/use-atom-command";
 
@@ -53,15 +54,16 @@ function ThreadDetailsPrLinkRow({
 }) {
   const m = useMessages();
   const projects = useProjects();
-  const parsed = sourceControlClients.parseChangeRequestUrl(link.url)?.link;
+  const hosts = useChangeRequestHosts(environmentId);
+  const parsed = sourceControlClients.parseChangeRequestLink(link.url);
   const project =
-    parsed === undefined
+    parsed === null
       ? null
       : (findProjectOnChangeRequestHost(
           projects.filter((candidate) => candidate.environmentId === environmentId),
           parsed,
         ) ?? null);
-  const linked = linkedPullRequestSnapshotStatus(link);
+  const linked = linkedPullRequestSnapshotStatus(link, hosts);
   const pr = linked?.pr ?? null;
   return (
     <ThreadDetailsPrRow
@@ -171,12 +173,10 @@ export function ThreadDetailsThreadPrRows({
   const { currentLink, pr, number, url } = displayed;
   const projects = useProjects();
   const parsed =
-    currentLink === null
-      ? undefined
-      : sourceControlClients.parseChangeRequestUrl(currentLink.url)?.link;
+    currentLink === null ? null : sourceControlClients.parseChangeRequestLink(currentLink.url);
   // Merge settings belong to the project holding the linked repository, the thread's own first.
   const rowProject =
-    parsed === undefined || (project !== null && findProjectForChangeRequest([project], parsed))
+    parsed === null || (project !== null && findProjectForChangeRequest([project], parsed))
       ? project
       : (findProjectForChangeRequest(
           projects.filter((candidate) => candidate.environmentId === threadRef.environmentId),

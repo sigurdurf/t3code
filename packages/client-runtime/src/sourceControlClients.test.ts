@@ -3,9 +3,16 @@ import { makeBuiltInSourceControlDefinitions } from "@t3tools/source-control-def
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  defineSourceControl,
+  makeSourceControlDefinitionRegistry,
+  parseChangeRequestPath,
+  type ChangeRequestHostProject,
+} from "@t3tools/source-control-core/shared/definition";
+import {
   appSignInTargetForRemote,
   appSignOutRequest,
   namedServerSignInStatus,
+  NO_CHANGE_REQUEST_HOSTS,
   normalizeServerAddressHost,
   signedInServers,
   sourceControlClients,
@@ -13,12 +20,13 @@ import {
 import { normalizeThreadPullRequestKey } from "./threadPullRequests.ts";
 
 const parse = (url: string) => {
-  const parsed = sourceControlClients.parseChangeRequestUrl(url);
+  const parsed = sourceControlClients.parseChangeRequestLink(url);
   if (parsed === null) return null;
-  const { repositoryUrl: _repositoryUrl, ...link } = parsed.link;
+  const { repositoryUrl: _repositoryUrl, ...link } = parsed;
   return link;
 };
-const kindOf = (url: string) => sourceControlClients.parseChangeRequestUrl(url)?.definition.kind;
+const kindOf = (url: string) =>
+  sourceControlClients.findByChangeRequestUrl(url, NO_CHANGE_REQUEST_HOSTS)?.kind;
 
 describe("sourceControlClients.parseChangeRequestUrl", () => {
   it("reads a GitHub pull request, lower-casing the repository", () => {
@@ -54,7 +62,7 @@ describe("sourceControlClients.parseChangeRequestUrl", () => {
       number: 8882,
     });
     expect(kindOf(url)).toBe("tanstack-source");
-    expect(sourceControlClients.parseChangeRequestUrl(url)?.link.repositoryUrl).toBe(
+    expect(sourceControlClients.parseChangeRequestLink(url)?.repositoryUrl).toBe(
       "https://source.tanstack.com/@TanStack/router",
     );
     // A server without the beta reads no TanStack Source host at all.
@@ -78,8 +86,8 @@ describe("sourceControlClients.parseChangeRequestUrl", () => {
       expect(kindOf(url), url).toBe("cursor-origin");
     }
     expect(
-      sourceControlClients.parseChangeRequestUrl("https://cursor.com/codebase/acme/web/pull/42")
-        ?.link.repositoryUrl,
+      sourceControlClients.parseChangeRequestLink("https://cursor.com/codebase/acme/web/pull/42")
+        ?.repositoryUrl,
     ).toBe("https://cursor.com/codebase/acme/web");
     expect(parse("https://cursor.com/codebase/acme/web")).toBeNull();
     expect(kindOf("https://www.cursor.com/updates/pull/42")).toBeUndefined();
@@ -96,6 +104,220 @@ describe("sourceControlClients.parseChangeRequestUrl", () => {
     expect(kindOf("https://gice.example.com/team/repo/pulls/7")).toBe("gice");
   });
 
+  describe("a link on a project's host, read as the host its server was detected as", () => {
+    const giceUrl = "https://git.example.com/team/repo/pulls/7";
+    const forgejoUrl = "https://code.example.org/team/repo/pulls/7";
+    const portUrl = "https://git.example.com:3000/team/repo/pulls/7";
+    const onGitExample = (provider: string) => ({
+      canonicalKey: "git.example.com/team/repo",
+      locator: {
+        source: "git-remote" as const,
+        remoteName: "origin",
+        remoteUrl: "git@git.example.com:team/repo.git",
+      },
+      displayName: "team/repo",
+      provider: SourceControlProviderKind.make(provider),
+      webUrl: "https://git.example.com/team/repo",
+    });
+    // One environment signed in to the server, one whose server cannot tell what it is.
+    const signedIn = onGitExample("gice");
+    const unsignedIn = onGitExample("unknown");
+    const forgejoThere = onGitExample("forgejo");
+    const { webUrl: _webUrl, ...overSsh } = signedIn;
+    const onPort = { ...signedIn, webUrl: "https://git.example.com:3000/team/repo" };
+    const forgejoOnPort = { ...forgejoThere, webUrl: "https://git.example.com:3000/team/repo" };
+    const kindWith = (url: string, projects: ReadonlyArray<ChangeRequestHostProject>) =>
+      sourceControlClients.findByChangeRequestUrl(
+        url,
+        sourceControlClients.changeRequestHosts(projects),
+      )?.kind;
+    const hosts = sourceControlClients.changeRequestHosts([signedIn]);
+
+    it("reads it as Gice's, actions and checkout command included", () => {
+      const gice = sourceControlClients.findByChangeRequestUrl(
+        giceUrl,
+        sourceControlClients.changeRequestHosts([null, signedIn]),
+      );
+      expect(gice?.kind).toBe("gice");
+      expect(gice?.label).toBe("Gice");
+      expect(gice?.changeRequestActions.has("enable-auto-merge")).toBe(true);
+      expect(gice?.checkoutCommand({ number: 7, headBranch: "feature" })).toBe(
+        "gice pr checkout 7",
+      );
+      expect(sourceControlClients.hostLabelForChangeRequestUrl(giceUrl, hosts)).toBe("Gice");
+    });
+
+    it.each([
+      ["no projects yet", [], "forgejo"],
+      ["an unknown host before the signed-in one", [unsignedIn, signedIn], "gice"],
+      ["an unknown host after the signed-in one", [signedIn, unsignedIn], "gice"],
+      ["only a host detected as unknown", [unsignedIn], "forgejo"],
+      ["Gice, then Forgejo on the same server", [signedIn, forgejoThere], "forgejo"],
+      ["Forgejo, then Gice on the same server", [forgejoThere, signedIn], "forgejo"],
+    ] as const)("with %s, reads it as %s's", (_name, projects, kind) => {
+      expect(kindWith(giceUrl, projects)).toBe(kind);
+    });
+
+    it("remembers nothing between calls", () => {
+      expect(kindWith(giceUrl, [signedIn])).toBe("gice");
+      expect(kindWith(giceUrl, [])).toBe("forgejo");
+    });
+
+    it("says nothing about another server", () => {
+      const forgejo = sourceControlClients.findByChangeRequestUrl(forgejoUrl, hosts);
+      expect(forgejo?.kind).toBe("forgejo");
+      expect(forgejo?.checkoutCommand({ number: 7, headBranch: "feature" })).toBeNull();
+    });
+
+    it.each([
+      ["a project on that port", portUrl, [onPort], "gice"],
+      ["a project on the default port, for a link on another", giceUrl, [onPort], "forgejo"],
+      ["an SSH project, whose remote names no port", portUrl, [overSsh], "gice"],
+      ["an exact host:port over a host-only entry", portUrl, [forgejoThere, onPort], "gice"],
+      [
+        "a conflict on host:port, with no host-only fallback",
+        portUrl,
+        [signedIn, onPort, forgejoOnPort],
+        "forgejo",
+      ],
+    ] as const)("keys a server by its port: %s", (_name, url, projects, kind) => {
+      expect(kindWith(url, projects)).toBe(kind);
+    });
+
+    it.each([
+      ["the default port", giceUrl, [signedIn], "git.example.com"],
+      ["another port", portUrl, [onPort], "git.example.com:3000"],
+    ] as const)(
+      "reads the same authority with and without projects on %s",
+      (_name, url, projects, authority) => {
+        expect(sourceControlClients.parseChangeRequestLink(url)?.authority).toBe(authority);
+        expect(
+          sourceControlClients.parseChangeRequestUrl(
+            url,
+            sourceControlClients.changeRequestHosts(projects),
+          )?.link.authority,
+        ).toBe(authority);
+      },
+    );
+
+    it("reads a `#N` autolink there as a pull request only where a project vouches for it", () => {
+      // Gice's issue route also answers for a pull request's number.
+      const issueUrl = "https://git.example.com/team/repo/issues/7";
+      expect(
+        sourceControlClients.changeRequestUrlFromReferenceAutolink(
+          issueUrl,
+          NO_CHANGE_REQUEST_HOSTS,
+        ),
+      ).toBeNull();
+      expect(sourceControlClients.changeRequestUrlFromReferenceAutolink(issueUrl, hosts)).toBe(
+        giceUrl,
+      );
+      expect(
+        sourceControlClients.parseIssueUrl(
+          "https://git.example.com/team/repo/issues/3",
+          signedIn.provider,
+        ),
+      ).toEqual(
+        expect.objectContaining({
+          link: { host: "git.example.com", scope: "team/repo", key: "3" },
+        }),
+      );
+    });
+
+    it("names its change requests without projects, as every host that could serve it does", () => {
+      expect(sourceControlClients.changeRequestTerminology(giceUrl)).toEqual(
+        sourceControlClients.get("gice").changeRequest,
+      );
+      expect(
+        sourceControlClients.changeRequestTerminology(
+          "https://gitlab.com/team/web/-/merge_requests/4",
+        ).singular,
+      ).toBe("merge request");
+      expect(sourceControlClients.changeRequestTerminology("https://example.com/").singular).toBe(
+        sourceControlClients.get(undefined).changeRequest.singular,
+      );
+    });
+
+    it("reads and keys it without Forgejo's reader", () => {
+      const withoutForgejo = makeSourceControlDefinitionRegistry(
+        sourceControlClients.definitions.filter((definition) => definition.kind !== "forgejo"),
+      );
+      expect(withoutForgejo.parseChangeRequestLink(portUrl)).toEqual({
+        host: "git.example.com",
+        authority: "git.example.com:3000",
+        repository: "team/repo",
+        number: 7,
+        repositoryUrl: "https://git.example.com:3000/team/repo",
+      });
+      expect(withoutForgejo.isSameChangeRequest(portUrl, `${portUrl}/files`)).toBe(true);
+      expect(withoutForgejo.isSameChangeRequest(portUrl, giceUrl)).toBe(false);
+    });
+  });
+
+  it("consults knownHost before route fallback when parsing a change request URL", () => {
+    const customKind = SourceControlProviderKind.make("custom-only");
+    const customOnly = defineSourceControl({
+      ...sourceControlClients.get("gice"),
+      kind: customKind,
+      label: "CustomOnly",
+      pickerLabel: "CustomOnly",
+      // Route that only matches when the caller vouches for the host (`known = true`).
+      parseChangeRequestUrl: (url, known = false) => {
+        if (!known) return null;
+        const link = parseChangeRequestPath(url, /^\/([^/]+\/[^/]+)\/reviews\/(\d+)$/u);
+        return link === null ? null : { ...link, authority: url.host.toLowerCase() };
+      },
+    });
+    const registry = makeSourceControlDefinitionRegistry([customOnly]);
+    const hosts = registry.changeRequestHosts([
+      {
+        canonicalKey: "code.example/acme/web",
+        locator: {
+          source: "git-remote",
+          remoteName: "origin",
+          remoteUrl: "https://code.example/acme/web.git",
+        },
+        provider: customKind,
+      },
+    ]);
+    expect(
+      registry.parseChangeRequestUrl(
+        "https://code.example/acme/web/reviews/9",
+        NO_CHANGE_REQUEST_HOSTS,
+      ),
+    ).toBeNull();
+    const link = {
+      host: "code.example",
+      authority: "code.example",
+      repository: "acme/web",
+      number: 9,
+      repositoryUrl: "https://code.example/acme/web",
+    };
+    expect(
+      registry.parseChangeRequestUrl("https://code.example/acme/web/reviews/9", hosts),
+    ).toEqual({ definition: customOnly, link });
+    // The link's fields need no projects: the reader that would read it on a vouched-for server
+    // gives them, though no reader claims the route on every hostname.
+    expect(registry.parseChangeRequestLink("https://code.example/acme/web/reviews/9")).toEqual(
+      link,
+    );
+    // Readers that would read different fields from one URL give none.
+    const disagreeing = makeSourceControlDefinitionRegistry([
+      customOnly,
+      defineSourceControl({
+        ...customOnly,
+        kind: SourceControlProviderKind.make("custom-other"),
+        parseChangeRequestUrl: (url, known = false) => {
+          const read = customOnly.parseChangeRequestUrl(url, known);
+          return read === null ? null : { ...read, number: read.number + 1 };
+        },
+      }),
+    ]);
+    expect(
+      disagreeing.parseChangeRequestLink("https://code.example/acme/web/reviews/9"),
+    ).toBeNull();
+  });
+
   it("reads a GitHub pull request on any host, so GitHub Enterprise works on its own name", () => {
     expect(parse("https://code.github.example.com/acme/web/pull/42")).toEqual({
       host: "code.github.example.com",
@@ -106,6 +328,7 @@ describe("sourceControlClients.parseChangeRequestUrl", () => {
     expect(
       sourceControlClients.changeRequestUrlFromReferenceAutolink(
         "https://code.github.example.com/acme/web/issues/42",
+        NO_CHANGE_REQUEST_HOSTS,
       ),
     ).toBe("https://code.github.example.com/acme/web/pull/42");
   });
@@ -124,6 +347,7 @@ describe("sourceControlClients.parseChangeRequestUrl", () => {
     expect(
       sourceControlClients.changeRequestUrlFromReferenceAutolink(
         "https://gitlab.com/team/apps/web/-/merge_requests/42",
+        NO_CHANGE_REQUEST_HOSTS,
       ),
     ).toBe("https://gitlab.com/team/apps/web/-/merge_requests/42");
   });
@@ -254,7 +478,7 @@ describe("sourceControlClients.isSameChangeRequest", () => {
 
 describe("change request URLs built from a parsed link", () => {
   const sibling = (url: string, number: number) => {
-    const parsed = sourceControlClients.parseChangeRequestUrl(url)!;
+    const parsed = sourceControlClients.parseChangeRequestUrl(url, NO_CHANGE_REQUEST_HOSTS)!;
     return parsed.definition.changeRequestUrl({
       host: parsed.link.host,
       repository: parsed.link.repository,

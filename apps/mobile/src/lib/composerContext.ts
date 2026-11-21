@@ -150,9 +150,7 @@ export function pullRequestComposerContext(
     baseBranch: pullRequest.baseBranch.slice(0, 2048),
   };
   const path = filePath?.trim().slice(0, 2048).trim();
-  const { singular } = (
-    sourceControlClients.findByChangeRequestUrl(metadata.url) ?? sourceControlClients.get(undefined)
-  ).changeRequest;
+  const { singular } = sourceControlClients.changeRequestTerminology(metadata.url);
   return {
     version: 1,
     kind: "review-comment",

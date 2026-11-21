@@ -65,10 +65,10 @@ export type ThreadPullRequestBadge = {
 export function makeThreadPullRequests(
   registry: Pick<
     SourceControlDefinitionRegistry,
-    "parseChangeRequestUrl" | "canonicalRepositoryKey" | "findByRepositoryKey"
+    "parseChangeRequestLink" | "canonicalRepositoryKey" | "findByRepositoryKey"
   >,
 ) {
-  const parse = (url: string) => registry.parseChangeRequestUrl(url)?.link ?? null;
+  const parse = (url: string) => registry.parseChangeRequestLink(url);
 
   function normalizeThreadPullRequestKey(key: ThreadPullRequestKeySource): ThreadPullRequestKey {
     const parsed = key.url === undefined ? null : parse(key.url);

@@ -59,7 +59,7 @@ export function usePullRequestThreads(
   const target = pullRequestTarget(params);
   const config = useEnvironmentServerConfig(target.environmentId);
   const supported = threadPullRequestLinkMode(config?.environment.capabilities) === "multiple";
-  const parsed = pr ? sourceControlClients.parseChangeRequestUrl(pr.url)?.link : undefined;
+  const parsed = pr ? sourceControlClients.parseChangeRequestLink(pr.url) : undefined;
   const reference = {
     ...target,
     input: { ...target.input, ...(parsed ? normalizeThreadPullRequestKey(parsed) : {}) },
