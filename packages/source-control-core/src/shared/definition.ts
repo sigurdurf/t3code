@@ -366,6 +366,11 @@ export interface SourceControlDefinition {
    * head even when it lives in a fork. Absent for a host that publishes none.
    */
   readonly changeRequestHeadRef?: (number: number) => string;
+  /**
+   * True when a host `recognizeRemote` claims by its name alone builds its change request URLs
+   * one way, so a URL can be built for it without a project there to say which server it runs.
+   */
+  readonly recognizedNameFixesUrls?: boolean;
   /** Null when this host does not claim the remote. Asked in the registry's recognition order. */
   readonly recognizeRemote: (remote: GitRemoteHost) => SourceControlProviderInfo | null;
   /** The host change requests in the project are listed and keyed under. */
