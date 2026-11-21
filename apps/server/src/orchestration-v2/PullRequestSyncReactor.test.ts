@@ -2309,6 +2309,12 @@ describe("PullRequestSyncReactor", () => {
       linked: [],
     },
     {
+      name: "a Gice create beside a command that lists other pull requests",
+      input: 'gice pr list && gice pr create -t "Fix the thing" > /dev/null',
+      output: "https://git.example.com/owner/repository/pulls/4",
+      linked: [],
+    },
+    {
       name: "another host's URL beside a create command",
       input: "gh pr create --fill",
       output: "https://gitlab.com/owner/repository/-/merge_requests/3",

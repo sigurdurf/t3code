@@ -3,6 +3,7 @@ import * as Bitbucket from "@t3tools/source-control-bitbucket/shared/definition"
 import { makeSourceControlDefinitionRegistry } from "@t3tools/source-control-core/shared/definition";
 import * as CursorOrigin from "@t3tools/source-control-cursor-origin/shared/definition";
 import * as Forgejo from "@t3tools/source-control-forgejo/shared/definition";
+import * as Gice from "@t3tools/source-control-gice/shared/definition";
 import * as GitCafe from "@t3tools/source-control-gitcafe/shared/definition";
 import * as GitHub from "@t3tools/source-control-github/shared/definition";
 import * as GitLab from "@t3tools/source-control-gitlab/shared/definition";
@@ -11,9 +12,9 @@ import * as TanStackSource from "@t3tools/source-control-tanstack-source/shared/
 export { canonicalizePullRequestUrl as canonicalizeGitCafePullRequestUrl } from "@t3tools/source-control-gitcafe/shared/definition";
 
 /**
- * GitHub comes first as the client default for unknown hosts. GitCafe, TanStack Source and Origin
- * claim URLs first: GitHub and Forgejo accept the same routes on any hostname. TanStack Source is a
- * private beta a server may leave out; clients always know it, for a server that has it.
+ * GitHub comes first as the client default for unknown hosts. GitCafe, TanStack Source, Gice and
+ * Origin claim URLs first: GitHub and Forgejo accept the same routes on any hostname. TanStack
+ * Source is a private beta a server may leave out; clients always know it, for a server that has it.
  */
 export function makeBuiltInSourceControlDefinitions(options: { readonly tanStackSource: boolean }) {
   const tanStackSource = options.tanStackSource ? [TanStackSource.definition] : [];
@@ -24,6 +25,7 @@ export function makeBuiltInSourceControlDefinitions(options: { readonly tanStack
       GitLab.definition,
       GitCafe.definition,
       ...tanStackSource,
+      Gice.definition,
       Forgejo.definition,
       Bitbucket.definition,
       AzureDevOps.definition,
@@ -32,6 +34,7 @@ export function makeBuiltInSourceControlDefinitions(options: { readonly tanStack
       claimChangeRequestUrlsFirst: [
         GitCafe.definition.kind,
         ...tanStackSource.map((definition) => definition.kind),
+        Gice.definition.kind,
         CursorOrigin.definition.kind,
         AzureDevOps.definition.kind,
       ],
@@ -44,6 +47,7 @@ export function makeBuiltInSourceControlDefinitions(options: { readonly tanStack
         GitLab.definition.kind,
         AzureDevOps.definition.kind,
         Bitbucket.definition.kind,
+        Gice.definition.kind,
       ],
     },
   );

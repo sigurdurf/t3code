@@ -291,10 +291,17 @@ const INSTALL_HINTS = [
       variable: "SRC_TOKEN",
     },
   ),
+  msg(
+    "Sign in to your Gice server or save an access token in Settings, set {host} and {token} on the server, or run {login}.",
+    { host: "GICE_HOST", token: "GICE_TOKEN", login: "`gice auth login --host <server-url>`" },
+  ),
 ];
 
 // Each host's `tokenAccess`, completing "Give it …".
-const TOKEN_ACCESS = [msg("read and write access to pull requests and contents")];
+const TOKEN_ACCESS = [
+  msg("read and write access to pull requests and contents"),
+  msg("repo:write, issues:write, and workflows:write scopes"),
+];
 
 /** @public A host's `tokenAccess`, translated when it is one of the hosts' fixed phrases. */
 export function sourceControlTokenAccessText(

@@ -52,6 +52,9 @@
   "eb0f60ef4f92ab7d": "Instala {fj} 0.6 o posterior desde {fjUrl} y ejecuta {fjLogin}, o instala {tea} 0.16 o posterior desde {teaUrl} y ejecuta {teaLogin} para cada servidor de Forgejo o Gitea.",
   "d026a85e2e50e675": "Instala la CLI de GitCafe con {install} y ejecuta {login}, guarda un token en Ajustes o define {variable} en el servidor.",
   "22d3c0c48a34b5b3": "Instala la CLI de TanStack Source con {install} y ejecuta {login}, guarda un token en Ajustes o define {variable} en el servidor.",
+  "645cd6e4214f49bc": "Inicia sesión en tu servidor de Gice o guarda un token de acceso en Ajustes, define {host} y {token} en el servidor o ejecuta {login}.",
+  "7b09564f31eb8171": "acceso de lectura y escritura a pull requests y contenido",
+  "2c5e89f5b1893017": "los ámbitos repo:write, issues:write y workflows:write",
   "79d776428f4d0650": "No se pudo cargar el archivo. Vuelve a conectarte e inténtalo de nuevo.",
   "3ea34cbb1ca5ba9b": "Vista previa cancelada.",
   "7c0af279ecb3da3a": "Las vistas previas de archivos en streaming no están disponibles en este entorno de ejecución.",
@@ -118,9 +121,9 @@
   "c4eb2b21c8c58a54": "Normal",
   "f42c2a36b3507308": "{label} activado",
   "77cc5f738cb7d459": "{label} desactivado",
-  "2159a4897d4a4d73": "{runtime, select, codex {Actualiza la CLI de Codex a {version} o posterior para usar {names}.} other {Actualiza {providerName} a {version} o posterior para usar {names}.}}",
-  "a0854b0f9604fc7b": "{runtime, select, codex {Para usar {names} se necesita la CLI de Codex {version} o posterior, pero esta instalación solo puede actualizarse hasta {latestVersion}. Instala la CLI de Codex de otra forma o espera a una versión más reciente.} other {Para usar {names} se necesita {providerName} {version} o posterior, pero esta instalación solo puede actualizarse hasta {latestVersion}. Instala {providerName} de otra forma o espera a una versión más reciente.}}",
   "aba3bb73ce212f0c": "Usar {names} requiere {providerName} {version} o posterior, pero el cask de Homebrew claude-code solo tiene {latestVersion}. Cambia al cask claude-code@latest: {command}",
+  "a0854b0f9604fc7b": "{runtime, select, codex {Para usar {names} se necesita la CLI de Codex {version} o posterior, pero esta instalación solo puede actualizarse hasta {latestVersion}. Instala la CLI de Codex de otra forma o espera a una versión más reciente.} other {Para usar {names} se necesita {providerName} {version} o posterior, pero esta instalación solo puede actualizarse hasta {latestVersion}. Instala {providerName} de otra forma o espera a una versión más reciente.}}",
+  "2159a4897d4a4d73": "{runtime, select, codex {Actualiza la CLI de Codex a {version} o posterior para usar {names}.} other {Actualiza {providerName} a {version} o posterior para usar {names}.}}",
   "d887bea446534de5": "Ningún proyecto de este entorno puede leer {host}/{repository}.",
   "4e466d60e2f7736b": "Pega la URL completa de la pull request; este hilo no tiene ningún repositorio con el que resolver el número.",
   "302625058bacbe38": "Pega una URL completa; el host de este proyecto no tiene una URL de {changeRequest} conocida.",
@@ -2560,10 +2563,9 @@
       "v": "v"
     }
   ],
+  "b4b98a0287c282e2": "Está en otra máquina, así que el agente de esta máquina no puede leerlo. Quítalo o vuelve a cambiar para enviar.",
   "5bbac0e5afeec779": "Hilo actual",
   "33c7e68fca089036": "Hilo, {title}",
-  "b4b98a0287c282e2": "Está en otra máquina, así que el agente de esta máquina no puede leerlo. Quítalo o vuelve a cambiar para enviar.",
-  "c6196d99000642b4": "Abrir hilo",
   "34cc63390ad793cc": "Elige un hilo",
   "8f12309ead62e38a": "Buscar hilos o proyectos...",
   "2f664754d005d9a7": "No se encontraron hilos activos.",
@@ -2573,6 +2575,7 @@
   "a3178769f8308cbc": "El hilo falló",
   "89b5e8f3887812da": "Solicitud de invitado",
   "62e626804919b294": "Se necesita una respuesta",
+  "c6196d99000642b4": "Abrir hilo",
   "826cb862b4a11fb3": "{label}:",
   "3e597ec938e7551b": "Tú:",
   "a1fbf2422c588292": "Agente:",
@@ -3984,9 +3987,11 @@
   "973e99fa86d7f531": "Mensaje en cola {position} de {total}, sin enviar",
   "0f6087c4f53c7f17": "Iniciar un turno con este mensaje ({shortcut})",
   "adab89933af02669": "Omitir la compactación y enviar este mensaje ({shortcut})",
+  "d8aaf932f90429c4": "Mover este comando al principio de la cola ({shortcut})",
   "3de4016452e8d2bd": "Enviar al turno actual ({shortcut})",
   "259cc9568148e8ad": "Iniciar un turno con este mensaje",
   "bb7fddb812d5d29e": "Omitir la compactación y enviar este mensaje",
+  "425ab15036aec8a4": "Mover este comando al principio de la cola",
   "a5fe1ee609b29a9f": "Enviar al turno actual",
   "2b7fd345e4f4fd6e": "Cancelar la edición del mensaje en cola",
   "47f1726bf106d2c8": "Editar mensaje en cola",
@@ -10753,13 +10758,6 @@
       "v": "v"
     }
   ],
-  "c97e21dd6897fa79": [
-    "Sesión iniciada como",
-    {
-      "t": "RedactedSensitiveText",
-      "i": 1
-    }
-  ],
   "4b4a237faa5c3ded": [
     "Esperando aprobación · el código caduca a las ",
     {
@@ -10797,6 +10795,13 @@
       "v": "v"
     },
     " explica cada uno antes de que apruebes."
+  ],
+  "c97e21dd6897fa79": [
+    "Sesión iniciada como",
+    {
+      "t": "RedactedSensitiveText",
+      "i": 1
+    }
   ],
   "795283fe03fcfac4": "Llega a los repositorios de las cuentas y organizaciones que instalaron la app.",
   "834dced9a4651f60": "Instalar en una organización",
@@ -10897,7 +10902,6 @@
   "76a2280b1b70b042": "O usa tus propias credenciales",
   "027d70661a6fc7ac": "Volver a escanear Git y las integraciones de hosting",
   "847dfcd39ed0f9a5": "Conecta un entorno para inspeccionar sus herramientas de control de versiones e integraciones de hosting.",
-  "7b09564f31eb8171": "acceso de lectura y escritura a pull requests y contenido",
   "8dd881ec9fd8c074": "Token de {host}",
   "4f7ff2645d23d463": "No hay token guardado; el servidor usa {envVar} o el inicio de sesión de {cliName}.",
   "8ea7a295f2739627": "Guardado para {hosts}.",
@@ -12501,7 +12505,5 @@
   "27d76249d09eb69f": "Guía de revisión lista",
   "faa3bb26abb39c93": "Falló la guía de revisión",
   "b7df38b7d8792d78": "Abrir guía",
-  "9e91e9a77b664e4e": "No se pudo iniciar una guía de revisión",
-  "d8aaf932f90429c4": "Mover este comando al principio de la cola ({shortcut})",
-  "425ab15036aec8a4": "Mover este comando al principio de la cola"
+  "9e91e9a77b664e4e": "No se pudo iniciar una guía de revisión"
 }

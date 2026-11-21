@@ -379,6 +379,12 @@ describe("pull request toolkit handlers", () => {
         number: 9,
       });
       expect(onGitHub.url).toBe("https://github.com/acme/web/pull/9");
+      const onGice = yield* harness.call("link_pull_request", {
+        host: "gice.example.test",
+        repository: "acme/web",
+        number: 3,
+      });
+      expect(onGice.url).toBe("https://gice.example.test/acme/web/pulls/3");
     }),
   );
 

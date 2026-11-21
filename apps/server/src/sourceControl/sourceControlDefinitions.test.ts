@@ -34,6 +34,7 @@ it.each([
     "7",
   ],
   ["https://codeberg.org/acme/web/issues/3", "forgejo", "codeberg.org", "acme/web", "3"],
+  ["https://gice.sed.is/acme/web/issues/5#comment-2", "gice", "gice.sed.is", "acme/web", "5"],
   [
     "https://dev.azure.com/acme/Web%20App/_workitems/edit/9",
     "azure-devops",
@@ -68,6 +69,7 @@ it.each([
   ["gh pr close https://github.com/o/r/pull/19 && gh pr merge 20", [19, 20]],
   ["glab mr merge https://gitlab.com/o/r/-/merge_requests/7", [7]],
   ["sleep 30; cafe pr merge 26271", [26271]],
+  ["gice pull close 7 && gice pr merge 8 --squash", [7, 8]],
   ["az repos pr update --id 19 --status completed", [19]],
   ["az repos pr update --id=19 --status=abandoned", [19]],
   ["gh pr merge --squash", "any"],

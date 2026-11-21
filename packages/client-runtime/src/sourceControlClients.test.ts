@@ -93,6 +93,7 @@ describe("sourceControlClients.parseChangeRequestUrl", () => {
       repository: "team/repo",
       number: 7,
     });
+    expect(kindOf("https://gice.example.com/team/repo/pulls/7")).toBe("gice");
   });
 
   it("reads a GitHub pull request on any host, so GitHub Enterprise works on its own name", () => {
@@ -306,6 +307,8 @@ describe("sourceControlClients.recognizeRemote", () => {
     expect(kindOfRemote("https://source.tanstack.com/@TanStack/router.git")).toBe(
       "tanstack-source",
     );
+    expect(kindOfRemote("https://gitlab.gice.dev/o/r")).toBe("gitlab");
+    expect(kindOfRemote("git@gice.example.com:o/r.git")).toBe("gice");
   });
 
   it("reads a remote no host claims as an unknown host, and a local path as no host", () => {

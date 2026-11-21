@@ -52,6 +52,9 @@
   "eb0f60ef4f92ab7d": "Installera {fj} 0.6 eller senare från {fjUrl} och kör {fjLogin}, eller installera {tea} 0.16 eller senare från {teaUrl} och kör {teaLogin} för varje Forgejo- eller Gitea-server.",
   "d026a85e2e50e675": "Installera GitCafe CLI med {install} och kör sedan {login}, spara en token i Inställningar eller ange {variable} på servern.",
   "22d3c0c48a34b5b3": "Installera TanStack Source CLI med {install} och kör sedan {login}, spara en token i Inställningar eller ange {variable} på servern.",
+  "645cd6e4214f49bc": "Logga in på din Gice-server eller spara en åtkomsttoken i Inställningar, ange {host} och {token} på servern eller kör {login}.",
+  "7b09564f31eb8171": "läs- och skrivåtkomst till pull requests och innehåll",
+  "2c5e89f5b1893017": "behörigheterna repo:write, issues:write och workflows:write",
   "79d776428f4d0650": "Filen kunde inte läsas in. Återanslut och försök igen.",
   "3ea34cbb1ca5ba9b": "Förhandsvisningen avbröts.",
   "7c0af279ecb3da3a": "Strömmande förhandsvisning av filer är inte tillgänglig i den här körmiljön.",
@@ -118,9 +121,9 @@
   "c4eb2b21c8c58a54": "Normal",
   "f42c2a36b3507308": "{label} på",
   "77cc5f738cb7d459": "{label} av",
-  "2159a4897d4a4d73": "{runtime, select, codex {Uppdatera Codex CLI till {version} eller senare för att använda {names}.} other {Uppdatera {providerName} till {version} eller senare för att använda {names}.}}",
-  "a0854b0f9604fc7b": "{runtime, select, codex {{names} kräver Codex CLI {version} eller senare, men den här installationen kan bara uppdateras till {latestVersion}. Installera Codex CLI på ett annat sätt eller vänta på en nyare version.} other {{names} kräver {providerName} {version} eller senare, men den här installationen kan bara uppdateras till {latestVersion}. Installera {providerName} på ett annat sätt eller vänta på en nyare version.}}",
   "aba3bb73ce212f0c": "{names} kräver {providerName} {version} eller senare, men Homebrew-casken claude-code har bara {latestVersion}. Byt till casken claude-code@latest: {command}",
+  "a0854b0f9604fc7b": "{runtime, select, codex {{names} kräver Codex CLI {version} eller senare, men den här installationen kan bara uppdateras till {latestVersion}. Installera Codex CLI på ett annat sätt eller vänta på en nyare version.} other {{names} kräver {providerName} {version} eller senare, men den här installationen kan bara uppdateras till {latestVersion}. Installera {providerName} på ett annat sätt eller vänta på en nyare version.}}",
+  "2159a4897d4a4d73": "{runtime, select, codex {Uppdatera Codex CLI till {version} eller senare för att använda {names}.} other {Uppdatera {providerName} till {version} eller senare för att använda {names}.}}",
   "d887bea446534de5": "Inget projekt i den här miljön kan läsa {host}/{repository}.",
   "4e466d60e2f7736b": "Klistra in hela pull request-URL:en; den här tråden har inget repo att slå upp numret i.",
   "302625058bacbe38": "Klistra in en fullständig URL; det här projektets värd har ingen känd URL för {changeRequest}.",
@@ -2560,10 +2563,9 @@
       "v": "v"
     }
   ],
+  "b4b98a0287c282e2": "Finns på en annan dator, så den här datorns agent kan inte läsa den. Ta bort den eller byt tillbaka för att skicka.",
   "5bbac0e5afeec779": "Aktuell tråd",
   "33c7e68fca089036": "Tråd, {title}",
-  "b4b98a0287c282e2": "Finns på en annan dator, så den här datorns agent kan inte läsa den. Ta bort den eller byt tillbaka för att skicka.",
-  "c6196d99000642b4": "Öppna tråd",
   "34cc63390ad793cc": "Välj en tråd",
   "8f12309ead62e38a": "Sök trådar eller projekt...",
   "2f664754d005d9a7": "Inga aktiva trådar hittades.",
@@ -2573,6 +2575,7 @@
   "a3178769f8308cbc": "Tråden misslyckades",
   "89b5e8f3887812da": "Gästbegäran",
   "62e626804919b294": "Input behövs",
+  "c6196d99000642b4": "Öppna tråd",
   "826cb862b4a11fb3": "{label}:",
   "3e597ec938e7551b": "Du:",
   "a1fbf2422c588292": "Agent:",
@@ -3985,9 +3988,11 @@
   "973e99fa86d7f531": "Köat meddelande {position} av {total}, inte skickat",
   "0f6087c4f53c7f17": "Starta en omgång med det här meddelandet ({shortcut})",
   "adab89933af02669": "Hoppa över komprimering och skicka det här meddelandet ({shortcut})",
+  "d8aaf932f90429c4": "Flytta det här kommandot först i kön ({shortcut})",
   "3de4016452e8d2bd": "Skicka in i den aktuella omgången ({shortcut})",
   "259cc9568148e8ad": "Starta en omgång med det här meddelandet",
   "bb7fddb812d5d29e": "Hoppa över komprimering och skicka det här meddelandet",
+  "425ab15036aec8a4": "Flytta det här kommandot först i kön",
   "a5fe1ee609b29a9f": "Skicka in i den aktuella omgången",
   "2b7fd345e4f4fd6e": "Avbryt redigering av köat meddelande",
   "47f1726bf106d2c8": "Redigera köat meddelande",
@@ -10765,13 +10770,6 @@
       "v": "v"
     }
   ],
-  "c97e21dd6897fa79": [
-    "Inloggad som",
-    {
-      "t": "RedactedSensitiveText",
-      "i": 1
-    }
-  ],
   "4b4a237faa5c3ded": [
     "Väntar på godkännande · koden går ut ",
     {
@@ -10809,6 +10807,13 @@
       "v": "v"
     },
     " förklarar var och en innan du godkänner."
+  ],
+  "c97e21dd6897fa79": [
+    "Inloggad som",
+    {
+      "t": "RedactedSensitiveText",
+      "i": 1
+    }
   ],
   "795283fe03fcfac4": "Når repon i konton och organisationer som har installerat appen.",
   "834dced9a4651f60": "Installera i en organisation",
@@ -10909,7 +10914,6 @@
   "76a2280b1b70b042": "Eller använd dina egna autentiseringsuppgifter",
   "027d70661a6fc7ac": "Genomsök Git- och värdintegrationer igen",
   "847dfcd39ed0f9a5": "Anslut en miljö för att granska dess versionshanteringsverktyg och värdintegrationer.",
-  "7b09564f31eb8171": "läs- och skrivåtkomst till pull requests och innehåll",
   "8dd881ec9fd8c074": "Token för {host}",
   "4f7ff2645d23d463": "Ingen token sparad; servern använder {envVar} eller {cliName}-inloggningen.",
   "8ea7a295f2739627": "Sparad för {hosts}.",
@@ -12513,7 +12517,5 @@
   "27d76249d09eb69f": "Granskningsguiden är klar",
   "faa3bb26abb39c93": "Granskningsguiden misslyckades",
   "b7df38b7d8792d78": "Öppna guiden",
-  "9e91e9a77b664e4e": "Kunde inte starta en granskningsguide",
-  "d8aaf932f90429c4": "Flytta det här kommandot först i kön ({shortcut})",
-  "425ab15036aec8a4": "Flytta det här kommandot först i kön"
+  "9e91e9a77b664e4e": "Kunde inte starta en granskningsguide"
 }

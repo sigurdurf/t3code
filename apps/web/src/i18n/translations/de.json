@@ -52,6 +52,9 @@
   "eb0f60ef4f92ab7d": "Installiere {fj} 0.6 oder neuer von {fjUrl} und führe {fjLogin} aus, oder installiere {tea} 0.16 oder neuer von {teaUrl} und führe {teaLogin} für jeden Forgejo- oder Gitea-Server aus.",
   "d026a85e2e50e675": "Installiere die GitCafe CLI mit {install} und führe dann {login} aus, speichere ein Token in den Einstellungen oder setze {variable} auf dem Server.",
   "22d3c0c48a34b5b3": "Installiere die TanStack Source CLI mit {install} und führe dann {login} aus, speichere ein Token in den Einstellungen oder setze {variable} auf dem Server.",
+  "645cd6e4214f49bc": "Melde dich bei deinem Gice-Server an oder speichere ein Zugriffstoken in den Einstellungen, setze {host} und {token} auf dem Server oder führe {login} aus.",
+  "7b09564f31eb8171": "Lese- und Schreibzugriff auf Pull Requests und Inhalte",
+  "2c5e89f5b1893017": "die Scopes repo:write, issues:write und workflows:write",
   "79d776428f4d0650": "Die Datei konnte nicht geladen werden. Verbinde dich erneut und versuch es noch einmal.",
   "3ea34cbb1ca5ba9b": "Vorschau abgebrochen.",
   "7c0af279ecb3da3a": "Streamende Dateivorschauen sind in dieser Laufzeitumgebung nicht verfügbar.",
@@ -118,9 +121,9 @@
   "c4eb2b21c8c58a54": "Normal",
   "f42c2a36b3507308": "{label} an",
   "77cc5f738cb7d459": "{label} aus",
-  "2159a4897d4a4d73": "{runtime, select, codex {Aktualisiere die Codex CLI auf {version} oder neuer, um {names} zu verwenden.} other {Aktualisiere {providerName} auf {version} oder neuer, um {names} zu verwenden.}}",
-  "a0854b0f9604fc7b": "{runtime, select, codex {{names} erfordert die Codex CLI {version} oder neuer, aber diese Installation kann höchstens auf {latestVersion} aktualisieren. Installiere die Codex CLI auf anderem Weg oder warte auf ein neueres Release.} other {{names} erfordert {providerName} {version} oder neuer, aber diese Installation kann höchstens auf {latestVersion} aktualisieren. Installiere {providerName} auf anderem Weg oder warte auf ein neueres Release.}}",
   "aba3bb73ce212f0c": "{names} erfordert {providerName} {version} oder neuer, aber der Homebrew-Cask claude-code hat nur {latestVersion}. Wechsle zum Cask claude-code@latest: {command}",
+  "a0854b0f9604fc7b": "{runtime, select, codex {{names} erfordert die Codex CLI {version} oder neuer, aber diese Installation kann höchstens auf {latestVersion} aktualisieren. Installiere die Codex CLI auf anderem Weg oder warte auf ein neueres Release.} other {{names} erfordert {providerName} {version} oder neuer, aber diese Installation kann höchstens auf {latestVersion} aktualisieren. Installiere {providerName} auf anderem Weg oder warte auf ein neueres Release.}}",
+  "2159a4897d4a4d73": "{runtime, select, codex {Aktualisiere die Codex CLI auf {version} oder neuer, um {names} zu verwenden.} other {Aktualisiere {providerName} auf {version} oder neuer, um {names} zu verwenden.}}",
   "d887bea446534de5": "Kein Projekt in dieser Umgebung kann {host}/{repository} lesen.",
   "4e466d60e2f7736b": "Füge die vollständige Pull-Request-URL ein. Dieser Thread hat kein Repository, in dem die Nummer aufgelöst werden kann.",
   "302625058bacbe38": "Füge eine vollständige URL ein. Für den Host dieses Projekts ist kein {changeRequest}-URL-Format bekannt.",
@@ -2561,10 +2564,9 @@
     },
     " installieren"
   ],
+  "b4b98a0287c282e2": "Auf einem anderen Rechner, daher kann der Agent dieses Rechners es nicht lesen. Entferne es oder wechsle zum Senden zurück.",
   "5bbac0e5afeec779": "Aktueller Thread",
   "33c7e68fca089036": "Thread, {title}",
-  "b4b98a0287c282e2": "Auf einem anderen Rechner, daher kann der Agent dieses Rechners es nicht lesen. Entferne es oder wechsle zum Senden zurück.",
-  "c6196d99000642b4": "Thread öffnen",
   "34cc63390ad793cc": "Thread wählen",
   "8f12309ead62e38a": "Threads oder Projekte durchsuchen...",
   "2f664754d005d9a7": "Keine aktiven Threads gefunden.",
@@ -2574,6 +2576,7 @@
   "a3178769f8308cbc": "Thread fehlgeschlagen",
   "89b5e8f3887812da": "Gastanfrage",
   "62e626804919b294": "Eingabe nötig",
+  "c6196d99000642b4": "Thread öffnen",
   "826cb862b4a11fb3": "{label}:",
   "3e597ec938e7551b": "Du:",
   "a1fbf2422c588292": "Agent:",
@@ -3988,9 +3991,11 @@
   "973e99fa86d7f531": "Eingereihte Nachricht {position} von {total}, nicht gesendet",
   "0f6087c4f53c7f17": "Eine Runde mit dieser Nachricht starten ({shortcut})",
   "adab89933af02669": "Komprimierung überspringen und diese Nachricht senden ({shortcut})",
+  "d8aaf932f90429c4": "Diesen Befehl an den Anfang der Warteschlange verschieben ({shortcut})",
   "3de4016452e8d2bd": "In die aktuelle Runde senden ({shortcut})",
   "259cc9568148e8ad": "Eine Runde mit dieser Nachricht starten",
   "bb7fddb812d5d29e": "Komprimierung überspringen und diese Nachricht senden",
+  "425ab15036aec8a4": "Diesen Befehl an den Anfang der Warteschlange verschieben",
   "a5fe1ee609b29a9f": "In die aktuelle Runde senden",
   "2b7fd345e4f4fd6e": "Bearbeiten der eingereihten Nachricht abbrechen",
   "47f1726bf106d2c8": "Eingereihte Nachricht bearbeiten",
@@ -10759,13 +10764,6 @@
     },
     " öffnen"
   ],
-  "c97e21dd6897fa79": [
-    "Angemeldet als",
-    {
-      "t": "RedactedSensitiveText",
-      "i": 1
-    }
-  ],
   "4b4a237faa5c3ded": [
     "Warte auf Genehmigung · Code läuft um ",
     {
@@ -10804,6 +10802,13 @@
       "v": "v"
     },
     " erklärt alles, bevor du genehmigst."
+  ],
+  "c97e21dd6897fa79": [
+    "Angemeldet als",
+    {
+      "t": "RedactedSensitiveText",
+      "i": 1
+    }
   ],
   "795283fe03fcfac4": "Erreicht Repositorys in Konten und Organisationen, die die App installiert haben.",
   "834dced9a4651f60": "In einer Organisation installieren",
@@ -10904,7 +10909,6 @@
   "76a2280b1b70b042": "Oder eigene Anmeldedaten verwenden",
   "027d70661a6fc7ac": "Git- und Hosting-Integrationen erneut scannen",
   "847dfcd39ed0f9a5": "Verbinde eine Umgebung, um ihre Versionskontroll-Tools und Hosting-Integrationen zu untersuchen.",
-  "7b09564f31eb8171": "Lese- und Schreibzugriff auf Pull Requests und Inhalte",
   "8dd881ec9fd8c074": "{host}-Token",
   "4f7ff2645d23d463": "Kein Token gespeichert; der Server verwendet {envVar} oder die {cliName}-Anmeldung.",
   "8ea7a295f2739627": "Gespeichert für {hosts}.",
@@ -12508,7 +12512,5 @@
   "27d76249d09eb69f": "Review-Leitfaden bereit",
   "faa3bb26abb39c93": "Review-Leitfaden fehlgeschlagen",
   "b7df38b7d8792d78": "Leitfaden öffnen",
-  "9e91e9a77b664e4e": "Review-Leitfaden konnte nicht gestartet werden",
-  "d8aaf932f90429c4": "Diesen Befehl an den Anfang der Warteschlange verschieben ({shortcut})",
-  "425ab15036aec8a4": "Diesen Befehl an den Anfang der Warteschlange verschieben"
+  "9e91e9a77b664e4e": "Review-Leitfaden konnte nicht gestartet werden"
 }

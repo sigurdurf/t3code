@@ -24,7 +24,7 @@ function reaction(overrides: Partial<PullRequestReaction> = {}): PullRequestReac
 describe("comment reaction permissions", () => {
   it("excludes review summaries only on hosts that say they take none", () => {
     const detail = {
-      provider: SourceControlProviderKind.make("github"),
+      provider: SourceControlProviderKind.make("gice"),
       capabilities: {
         diff: true,
         comment: true,
