@@ -1,4 +1,5 @@
 import {
+  isPullRequestReviewAnchor,
   parsePullRequestAnchor,
   pullRequestAnchorMatchesUrl,
   pullRequestLinkCommit,
@@ -1366,7 +1367,7 @@ function remarkText(remark: string, review: ReadonlyArray<string>): string {
   return `${remark.slice(0, end)}\n… ${omitted} more characters of the review summary are omitted; read it at the review link.\n\n${after}`;
 }
 
-/** A GitHub review summary's link and the line comments it posted, which live in other threads. */
+/** A review summary's link and the line comments it posted, which live in other threads. */
 function reviewLineComments(
   comment: PullRequestComment,
   pullRequest: {
@@ -1376,8 +1377,8 @@ function reviewLineComments(
 ): ReadonlyArray<string> {
   const reviewThreads = pullRequest.reviewThreads;
   const anchor = comment.kind === "review" ? parsePullRequestAnchor(comment.url) : null;
-  // Only GitHub links line comments to their review, so no other host can say it posted none.
-  if (anchor?.kind !== "timeline" || !/^pullrequestreview-\d+$/i.test(anchor.anchor)) return [];
+  // Only hosts whose line comments name their review can say it posted none.
+  if (anchor?.kind !== "timeline" || !isPullRequestReviewAnchor(anchor.anchor)) return [];
   const posted = reviewThreads.flatMap((thread) =>
     thread.comments.flatMap((lineComment) => {
       const body = readableBody(lineComment.body);

@@ -150,7 +150,7 @@ export function parsePullRequestAnchor(url: string | null | undefined): PullRequ
     };
   }
   if (
-    /^(?:(?:issuecomment-|pullrequestreview-|discussion_r|r|commitcomment-|event-|note_|comment-)\d+|discussion-diff-\d+(?:[LR]\d+(?:-[LR]\d+)?)?)$/i.test(
+    /^(?:(?:issuecomment-|pullrequestreview-|review-|discussion_r|discussion-|r|commitcomment-|event-|note_|comment-)\d+|discussion-diff-\d+(?:[LR]\d+(?:-[LR]\d+)?)?)$/i.test(
       anchor,
     )
   ) {
@@ -172,6 +172,11 @@ interface AnchoredComment {
   readonly reviewUrl?: string | null | undefined;
 }
 
+/** A review's own anchor, which the line comments it posted name as their `reviewUrl`. */
+export function isPullRequestReviewAnchor(anchor: string): boolean {
+  return /^(?:pullrequestreview|review)-\d+$/i.test(anchor);
+}
+
 /**
  * A review with no text of its own appears only through the line comments it posted, so its link
  * resolves to the earliest of those. Any other anchor, or a review shown in its own right, is kept.
@@ -181,7 +186,7 @@ export function resolvePullRequestReviewAnchor(
   comments: ReadonlyArray<Pick<AnchoredComment, "url">>,
   reviewThreads: ReadonlyArray<{ readonly comments: ReadonlyArray<AnchoredComment> }>,
 ): string {
-  if (!/^pullrequestreview-\d+$/i.test(anchor)) return anchor;
+  if (!isPullRequestReviewAnchor(anchor)) return anchor;
   if (comments.some((comment) => pullRequestAnchorMatchesUrl(anchor, comment.url))) return anchor;
   // The earliest comment the review posted; `toSorted` is missing from Hermes.
   let posted: AnchoredComment | undefined;
