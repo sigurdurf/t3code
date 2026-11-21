@@ -10739,14 +10739,24 @@
   ],
   "b53527a02b031077": "A API da área de transferência não está disponível ao copiar o código de login.",
   "a9a5c6fe0166c0e3": "Falha ao copiar o código de login para a área de transferência.",
-  "f18f93cf2941bfc3": "Conta do GitHub conectada",
+  "57700bc8fd922517": "Conta do {host} conectada",
   "f7b3ac7ea71b2a41": "Mostrar conta",
   "8de5a4366b58bdba": "Ocultar conta",
   "362486999f207b7d": "Conectado, mas o token salvo abaixo é usado enquanto puder ser lido.",
   "9e8db85a88bbfa4a": "Conectado",
-  "4e4ab7e39d3cb684": "Aprove o app no GitHub para concluir o login.",
-  "154b0a0947b7f831": "Um limite de requisições da API do GitHub bem maior que o de um token pessoal ou do gh login.",
-  "e860c536bb9cad2d": "Entrar com o GitHub",
+  "9bf7875495e7309e": "Aprove o app no {host} para concluir o login.",
+  "196d72d647eed45e": "Um limite de requisições da API do {host} muito maior que o de um token pessoal ou login pela CLI.",
+  "2f68fd4677b789af": "Entrar com o {host}",
+  "7722fb4a8bc7b360": "Entre no seu servidor {host} pelo navegador, sem criar nem colar um token.",
+  "b4c93ac0a00ab769": "Endereço do servidor {host}",
+  "c9a117a70e138c42": [
+    "Copiar código e abrir o ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
   "c97e21dd6897fa79": [
     "Conectado como",
     {
@@ -10754,7 +10764,6 @@
       "i": 1
     }
   ],
-  "a9d6996c73500a5c": "Copiar código e abrir o GitHub",
   "4b4a237faa5c3ded": [
     "Aguardando aprovação · o código expira às ",
     {
@@ -10763,9 +10772,47 @@
       "v": "v"
     }
   ],
+  "f2d5e7b16e6274fa": [
+    "Aprove somente se o ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " mostrar este código e digite a parte que a página pedir. Em outro dispositivo, acesse ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "."
+  ],
+  "6d9a8f08323c1e9d": [
+    "Solicita ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    ". O ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " explica cada um antes de você aprovar."
+  ],
   "795283fe03fcfac4": "Acessa repositórios das contas e organizações que instalaram o app.",
   "834dced9a4651f60": "Instalar em uma organização",
-  "d15cc7522e8d9637": "Gerenciar no GitHub",
+  "ae342d2dde02dd31": [
+    "Gerenciar no ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "32111e0efc4c768e": "Entrar novamente",
   "719fdde2cc71cced": "Autenticado",
   "d6845667c3278af2": "Não autenticado",
   "7813f10f3f534004": "Status desconhecido",

@@ -10747,14 +10747,24 @@
   ],
   "b53527a02b031077": "Urklipps-API:t är inte tillgängligt vid kopiering av inloggningskoden.",
   "a9a5c6fe0166c0e3": "Kunde inte kopiera inloggningskoden till urklipp.",
-  "f18f93cf2941bfc3": "Inloggat GitHub-konto",
+  "57700bc8fd922517": "Inloggat {host}-konto",
   "f7b3ac7ea71b2a41": "Visa konto",
   "8de5a4366b58bdba": "Dölj konto",
   "362486999f207b7d": "Inloggad, men token som sparats nedan används så länge den kan läsas.",
   "9e8db85a88bbfa4a": "Inloggad",
-  "4e4ab7e39d3cb684": "Godkänn appen på GitHub för att slutföra inloggningen.",
-  "154b0a0947b7f831": "En mycket högre gräns för GitHub API än en personlig token eller gh login.",
-  "e860c536bb9cad2d": "Logga in med GitHub",
+  "9bf7875495e7309e": "Godkänn appen på {host} för att slutföra inloggningen.",
+  "196d72d647eed45e": "En betydligt högre gräns för {host}s API än en personlig token eller CLI-inloggning.",
+  "2f68fd4677b789af": "Logga in med {host}",
+  "7722fb4a8bc7b360": "Logga in på din {host}-server i webbläsaren, utan någon token att skapa eller klistra in.",
+  "b4c93ac0a00ab769": "Adress till {host}-servern",
+  "c9a117a70e138c42": [
+    "Kopiera koden och öppna ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
   "c97e21dd6897fa79": [
     "Inloggad som",
     {
@@ -10762,7 +10772,6 @@
       "i": 1
     }
   ],
-  "a9d6996c73500a5c": "Kopiera koden och öppna GitHub",
   "4b4a237faa5c3ded": [
     "Väntar på godkännande · koden går ut ",
     {
@@ -10771,9 +10780,47 @@
       "v": "v"
     }
   ],
+  "f2d5e7b16e6274fa": [
+    "Godkänn bara om ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " visar den här koden, och skriv den del av den som sidan ber om. På en annan enhet går du till ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "."
+  ],
+  "6d9a8f08323c1e9d": [
+    "Begär ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    ". ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " förklarar var och en innan du godkänner."
+  ],
   "795283fe03fcfac4": "Når repon i konton och organisationer som har installerat appen.",
   "834dced9a4651f60": "Installera i en organisation",
-  "d15cc7522e8d9637": "Hantera på GitHub",
+  "ae342d2dde02dd31": [
+    "Hantera på ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "32111e0efc4c768e": "Logga in igen",
   "719fdde2cc71cced": "Autentiserad",
   "d6845667c3278af2": "Inte autentiserad",
   "7813f10f3f534004": "Status okänd",

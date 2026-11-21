@@ -10740,14 +10740,25 @@
   ],
   "b53527a02b031077": "Die Zwischenablage-API ist beim Kopieren des Anmeldecodes nicht verfügbar.",
   "a9a5c6fe0166c0e3": "Der Anmeldecode konnte nicht in die Zwischenablage kopiert werden.",
-  "f18f93cf2941bfc3": "Angemeldetes GitHub-Konto",
+  "57700bc8fd922517": "Angemeldetes {host}-Konto",
   "f7b3ac7ea71b2a41": "Konto anzeigen",
   "8de5a4366b58bdba": "Konto ausblenden",
   "362486999f207b7d": "Angemeldet, aber das unten gespeicherte Token wird verwendet, solange es lesbar ist.",
   "9e8db85a88bbfa4a": "Angemeldet",
-  "4e4ab7e39d3cb684": "Genehmige die App auf GitHub, um die Anmeldung abzuschließen.",
-  "154b0a0947b7f831": "Ein deutlich höheres GitHub-API-Ratenlimit als ein persönliches Token oder gh login.",
-  "e860c536bb9cad2d": "Mit GitHub anmelden",
+  "9bf7875495e7309e": "Genehmige die App auf {host}, um die Anmeldung abzuschließen.",
+  "196d72d647eed45e": "Ein deutlich höheres {host}-API-Ratenlimit als ein persönliches Token oder eine CLI-Anmeldung.",
+  "2f68fd4677b789af": "Mit {host} anmelden",
+  "7722fb4a8bc7b360": "Melde dich im Browser bei deinem {host}-Server an, ohne ein Token zu erstellen oder einzufügen.",
+  "b4c93ac0a00ab769": "Adresse des {host}-Servers",
+  "c9a117a70e138c42": [
+    "Code kopieren & ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " öffnen"
+  ],
   "c97e21dd6897fa79": [
     "Angemeldet als",
     {
@@ -10755,7 +10766,6 @@
       "i": 1
     }
   ],
-  "a9d6996c73500a5c": "Code kopieren & GitHub öffnen",
   "4b4a237faa5c3ded": [
     "Warte auf Genehmigung · Code läuft um ",
     {
@@ -10765,9 +10775,48 @@
     },
     " ab"
   ],
+  "f2d5e7b16e6274fa": [
+    "Genehmige nur, wenn ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " diesen Code zeigt, und gib den Teil davon ein, nach dem die Seite fragt. Auf einem anderen Gerät öffne ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "."
+  ],
+  "6d9a8f08323c1e9d": [
+    "Fordert ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " an. ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " erklärt alles, bevor du genehmigst."
+  ],
   "795283fe03fcfac4": "Erreicht Repositorys in Konten und Organisationen, die die App installiert haben.",
   "834dced9a4651f60": "In einer Organisation installieren",
-  "d15cc7522e8d9637": "Auf GitHub verwalten",
+  "ae342d2dde02dd31": [
+    "Auf ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " verwalten"
+  ],
+  "32111e0efc4c768e": "Erneut anmelden",
   "719fdde2cc71cced": "Authentifiziert",
   "d6845667c3278af2": "Nicht authentifiziert",
   "7813f10f3f534004": "Status unbekannt",

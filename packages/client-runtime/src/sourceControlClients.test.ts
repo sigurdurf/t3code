@@ -5,6 +5,9 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   appSignInTargetForRemote,
   appSignOutRequest,
+  namedServerSignInStatus,
+  normalizeServerAddressHost,
+  signedInServers,
   sourceControlClients,
 } from "./sourceControlClients.ts";
 import { normalizeThreadPullRequestKey } from "./threadPullRequests.ts";
@@ -488,5 +491,69 @@ describe("appSignOutRequest", () => {
         },
       });
     }
+  });
+});
+
+describe("normalizeServerAddressHost", () => {
+  it.each([
+    ["a pasted URL, port kept", "https://Gice.Example:8443/team/repo", "gice.example:8443"],
+    ["a bare hostname", "  Code.Example/  ", "code.example"],
+    ["a local server", "http://localhost:3000/", "localhost:3000"],
+    ["nothing", "   ", ""],
+  ])("reads the host of %s", (_name, address, host) => {
+    expect(normalizeServerAddressHost(address)).toBe(host);
+  });
+});
+
+describe("signedInServers", () => {
+  it("lists the servers with a saved sign-in, redacted or not", () => {
+    expect(
+      signedInServers({ "git.example.com": "__redacted__", "old.example.com": "", "x.test": "t" }),
+    ).toEqual(["git.example.com", "x.test"]);
+  });
+});
+
+describe("namedServerSignInStatus", () => {
+  const host = "git.example.com";
+  const account = (entry: { account: string; authenticated: boolean; error?: string }) => ({
+    host,
+    active: true,
+    ...entry,
+  });
+
+  it.each([
+    [
+      "a saved token overrides it",
+      [account({ account: "alice", authenticated: true })],
+      true,
+      { kind: "overridden" },
+    ],
+    [
+      "an authenticated account names the user",
+      [account({ account: "alice", authenticated: true })],
+      false,
+      { kind: "authenticated", account: "alice" },
+    ],
+    [
+      "a server turned off reports why, not its host as the account",
+      [account({ account: host, authenticated: false, error: "turned off in Settings" })],
+      false,
+      { kind: "error", error: "turned off in Settings" },
+    ],
+    ["discovery says nothing of it", [], false, { kind: "signed-in" }],
+    [
+      "an unauthenticated entry gives no reason",
+      [account({ account: host, authenticated: false })],
+      false,
+      { kind: "signed-in" },
+    ],
+    [
+      "another server's account is not this one's",
+      [{ host: "other.example.com", account: "bob", active: true, authenticated: true }],
+      false,
+      { kind: "signed-in" },
+    ],
+  ] as const)("when %s", (_name, accounts, tokenOverrides, status) => {
+    expect(namedServerSignInStatus(accounts, host, tokenOverrides)).toEqual(status);
   });
 });

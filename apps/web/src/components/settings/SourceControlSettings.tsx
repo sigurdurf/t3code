@@ -516,7 +516,7 @@ export function SourceControlSettingsPanel() {
                 environmentId={environmentId}
                 definition={definition}
                 appSignIn={credentials.appSignIn}
-                account={Option.getOrNull(item.auth.account)}
+                auth={item.auth}
                 onChanged={handleScan}
               />
             ) : null}

@@ -10735,14 +10735,24 @@
   ],
   "b53527a02b031077": "La API del portapapeles no está disponible al copiar el código de inicio de sesión.",
   "a9a5c6fe0166c0e3": "No se pudo copiar el código de inicio de sesión al portapapeles.",
-  "f18f93cf2941bfc3": "Cuenta de GitHub con sesión iniciada",
+  "57700bc8fd922517": "Cuenta de {host} con sesión iniciada",
   "f7b3ac7ea71b2a41": "Mostrar cuenta",
   "8de5a4366b58bdba": "Ocultar cuenta",
   "362486999f207b7d": "Sesión iniciada, pero se usa el token guardado abajo mientras se pueda leer.",
   "9e8db85a88bbfa4a": "Sesión iniciada",
-  "4e4ab7e39d3cb684": "Aprueba la app en GitHub para terminar de iniciar sesión.",
-  "154b0a0947b7f831": "Un límite de solicitudes de la API de GitHub mucho mayor que con un token personal o gh login.",
-  "e860c536bb9cad2d": "Iniciar sesión con GitHub",
+  "9bf7875495e7309e": "Aprueba la app en {host} para terminar de iniciar sesión.",
+  "196d72d647eed45e": "Un límite de solicitudes de la API de {host} mucho mayor que con un token personal o un inicio de sesión de la CLI.",
+  "2f68fd4677b789af": "Iniciar sesión con {host}",
+  "7722fb4a8bc7b360": "Inicia sesión en tu servidor de {host} en el navegador, sin crear ni pegar un token.",
+  "b4c93ac0a00ab769": "Dirección del servidor de {host}",
+  "c9a117a70e138c42": [
+    "Copiar código y abrir ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
   "c97e21dd6897fa79": [
     "Sesión iniciada como",
     {
@@ -10750,7 +10760,6 @@
       "i": 1
     }
   ],
-  "a9d6996c73500a5c": "Copiar código y abrir GitHub",
   "4b4a237faa5c3ded": [
     "Esperando aprobación · el código caduca a las ",
     {
@@ -10759,9 +10768,47 @@
       "v": "v"
     }
   ],
+  "f2d5e7b16e6274fa": [
+    "Aprueba solo si ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " muestra este código y escribe la parte que pida la página. En otro dispositivo, ve a ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "."
+  ],
+  "6d9a8f08323c1e9d": [
+    "Solicita ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    ". ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " explica cada uno antes de que apruebes."
+  ],
   "795283fe03fcfac4": "Llega a los repositorios de las cuentas y organizaciones que instalaron la app.",
   "834dced9a4651f60": "Instalar en una organización",
-  "d15cc7522e8d9637": "Gestionar en GitHub",
+  "ae342d2dde02dd31": [
+    "Gestionar en ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "32111e0efc4c768e": "Volver a iniciar sesión",
   "719fdde2cc71cced": "Autenticado",
   "d6845667c3278af2": "No autenticado",
   "7813f10f3f534004": "Estado desconocido",

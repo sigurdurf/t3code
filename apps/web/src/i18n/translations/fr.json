@@ -10739,14 +10739,24 @@
   ],
   "b53527a02b031077": "L’API Presse-papiers n’est pas disponible pour copier le code de connexion.",
   "a9a5c6fe0166c0e3": "Impossible de copier le code de connexion dans le presse-papiers.",
-  "f18f93cf2941bfc3": "Compte GitHub connecté",
+  "57700bc8fd922517": "Compte {host} connecté",
   "f7b3ac7ea71b2a41": "Afficher le compte",
   "8de5a4366b58bdba": "Masquer le compte",
   "362486999f207b7d": "Connecté, mais le jeton enregistré ci-dessous est utilisé tant qu’il peut être lu.",
   "9e8db85a88bbfa4a": "Connecté",
-  "4e4ab7e39d3cb684": "Approuvez l’app sur GitHub pour terminer la connexion.",
-  "154b0a0947b7f831": "Une limite de débit de l’API GitHub bien plus élevée qu’avec un jeton personnel ou gh login.",
-  "e860c536bb9cad2d": "Se connecter avec GitHub",
+  "9bf7875495e7309e": "Approuvez l’app sur {host} pour terminer la connexion.",
+  "196d72d647eed45e": "Une limite de débit de l’API {host} bien plus élevée qu’avec un jeton personnel ou une connexion CLI.",
+  "2f68fd4677b789af": "Se connecter avec {host}",
+  "7722fb4a8bc7b360": "Connectez-vous à votre serveur {host} dans le navigateur, sans jeton à créer ni à coller.",
+  "b4c93ac0a00ab769": "Adresse du serveur {host}",
+  "c9a117a70e138c42": [
+    "Copier le code et ouvrir ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
   "c97e21dd6897fa79": [
     "Connecté en tant que ",
     {
@@ -10754,7 +10764,6 @@
       "i": 1
     }
   ],
-  "a9d6996c73500a5c": "Copier le code et ouvrir GitHub",
   "4b4a237faa5c3ded": [
     "En attente d’approbation · le code expire à ",
     {
@@ -10763,9 +10772,47 @@
       "v": "v"
     }
   ],
+  "f2d5e7b16e6274fa": [
+    "N’approuvez que si ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " affiche ce code, et saisissez la partie que la page demande. Sur un autre appareil, allez sur ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "."
+  ],
+  "6d9a8f08323c1e9d": [
+    "Demande ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    ". ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " explique chacun avant que vous approuviez."
+  ],
   "795283fe03fcfac4": "Accède aux dépôts des comptes et organisations qui ont installé l’app.",
   "834dced9a4651f60": "Installer sur une organisation",
-  "d15cc7522e8d9637": "Gérer sur GitHub",
+  "ae342d2dde02dd31": [
+    "Gérer sur ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "32111e0efc4c768e": "Se reconnecter",
   "719fdde2cc71cced": "Authentifié",
   "d6845667c3278af2": "Non authentifié",
   "7813f10f3f534004": "Statut inconnu",
