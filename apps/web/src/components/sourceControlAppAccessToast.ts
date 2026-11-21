@@ -39,7 +39,7 @@ export async function suggestAppAccessForRemote(
       children: m(msg("Install")),
       onClick: () => {
         toastManager.close(id);
-        window.open(target.appSignIn.installUrl, "_blank", "noopener,noreferrer");
+        window.open(target.installUrl, "_blank", "noopener,noreferrer");
       },
     },
   });

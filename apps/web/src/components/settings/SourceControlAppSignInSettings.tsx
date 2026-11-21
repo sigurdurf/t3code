@@ -98,7 +98,7 @@ export function SourceControlAppSignInSettings({
   readonly onChanged: () => void;
 }) {
   const gt = useGT();
-  const host = appSignIn.hosts[0] ?? "";
+  const host = appSignIn.hosts?.[0] ?? "";
   const { signIns, tokens } = useEnvironmentSettings(environmentId, (settings) =>
     readHostCredentialSettings(settings, definition.kind),
   );
@@ -271,10 +271,12 @@ export function SourceControlAppSignInSettings({
           <span className="min-w-0 flex-1">
             <T>Reaches repositories in accounts and organizations that installed the app.</T>
           </span>
-          <ExternalLink href={appSignIn.installUrl}>
-            <T>Install on an organization</T>
-          </ExternalLink>
-          <ExternalLink href={appSignIn.revokeUrl}>
+          {appSignIn.installUrl === undefined ? null : (
+            <ExternalLink href={appSignIn.installUrl}>
+              <T>Install on an organization</T>
+            </ExternalLink>
+          )}
+          <ExternalLink href={appSignIn.revokeUrl(host)}>
             <T>Manage on GitHub</T>
           </ExternalLink>
         </div>

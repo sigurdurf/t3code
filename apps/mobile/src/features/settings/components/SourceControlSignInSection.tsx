@@ -37,7 +37,7 @@ export function AppSignInRow(props: {
   const gt = useGT();
   const { environment, definition, appSignIn } = props;
   const environmentId = environment.environmentId;
-  const host = appSignIn.hosts[0] ?? "";
+  const host = appSignIn.hosts?.[0] ?? "";
   const { signIns } = readHostCredentialSettings(
     environment.serverConfig.settings,
     definition.kind,
@@ -112,6 +112,7 @@ export function AppSignInRow(props: {
       },
     });
 
+  const installUrl = appSignIn.installUrl;
   const onPress = () => {
     if (signedIn) {
       Dialog.alert(
@@ -121,8 +122,10 @@ export function AppSignInRow(props: {
           { host: "GitHub" },
         ),
         [
-          { text: gt("Install on an organization"), onPress: () => openUrl(appSignIn.installUrl) },
-          { text: gt("Sign out"), style: "destructive", onPress: signOut },
+          ...(installUrl === undefined
+            ? []
+            : [{ text: gt("Install on an organization"), onPress: () => openUrl(installUrl) }]),
+          { text: gt("Sign out"), style: "destructive" as const, onPress: signOut },
           { text: gt("Cancel"), style: "cancel" },
         ],
       );

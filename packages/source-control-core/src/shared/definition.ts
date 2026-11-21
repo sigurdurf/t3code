@@ -214,18 +214,21 @@ export interface SourceControlHostCredentials {
 }
 
 /**
- * A forge app the server signs in to with a device code, on the hosts it is registered on. The
- * session it keeps is the `signIns` setting, which takes precedence over everything but a saved
- * token.
+ * A forge app the server signs in to with a device code. The session it keeps is the `signIns`
+ * setting, which takes precedence over everything but a saved token.
  */
 export interface SourceControlAppSignIn {
   /** The app's name on the forge, as the consent screen shows it. */
   readonly appName: string;
-  readonly hosts: ReadonlyArray<string>;
-  /** Where an account or organization installs the app so it can reach its repositories. */
-  readonly installUrl: string;
-  /** Where the user revokes the app's access entirely. */
-  readonly revokeUrl: string;
+  /** The hosts the app is registered on. Absent: any server the user names, as self-hosted. */
+  readonly hosts?: ReadonlyArray<string>;
+  /**
+   * Where an account or organization installs the app so it can reach its repositories. Absent
+   * for an app that reaches whatever its account can.
+   */
+  readonly installUrl?: string;
+  /** Where the user revokes the app's access to `host` entirely. */
+  readonly revokeUrl: (host: string) => string;
 }
 
 export const SourceControlHostName = TrimmedNonEmptyString.pipe(
