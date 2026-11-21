@@ -889,23 +889,12 @@ const enrichProjectShells = Effect.fn("ws.orchestrationV2.enrichProjectShells")(
     Effect.flatMap(ProjectEnrichmentService.ProjectEnrichmentService, (projectEnrichment) =>
       Effect.forEach(
         projects,
-        (project) =>
-          projectEnrichment.getAvailable(project.workspaceRoot).pipe(
-            Effect.map((enrichment) => ({
-              project: {
-                ...project,
-                repositoryIdentity: enrichment.repositoryIdentity,
-              },
-              repositoryIdentityResolved: enrichment.repositoryIdentityResolved,
-            })),
-          ),
+        (project) => ProjectEnrichmentService.enrichProjectShell(projectEnrichment, project),
         { concurrency: 16 },
       ).pipe(
         Effect.map((enriched) => ({
           projects: enriched.map((entry) => entry.project),
-          resolvedRepositoryIdentityRoots: enriched
-            .filter((entry) => entry.repositoryIdentityResolved)
-            .map((entry) => entry.project.workspaceRoot),
+          resolvedRepositoryIdentityRoots: enriched.flatMap((entry) => entry.resolvedRoots),
         })),
       ),
     ),
@@ -1294,17 +1283,34 @@ export const subscribeOrchestrationV2Shell = Effect.fn("ws.orchestrationV2.subsc
       Stream.groupedWithin(64, Duration.millis(25)),
       Stream.mapEffect((changes) =>
         Effect.gen(function* () {
-          const identities = new Map(
-            Array.from(changes, (change) => [
-              change.workspaceRoot,
-              change.enrichment.repositoryIdentity,
-            ]),
+          const changed = new Map(
+            Array.from(changes, (change) => [change.workspaceRoot, change.enrichment]),
           );
+          // The published identities, even if the cache has moved on since.
+          const withChanges = {
+            getAvailable: (root: string) => {
+              const enrichment = changed.get(root);
+              return enrichment ? Effect.succeed(enrichment) : projectEnrichment.getAvailable(root);
+            },
+            getAvailableRepositoryIdentity: (root: string) => {
+              const enrichment = changed.get(root);
+              return enrichment
+                ? Effect.succeed(enrichment)
+                : projectEnrichment.getAvailableRepositoryIdentity(root);
+            },
+          };
           const snapshotSequence = yield* applicationEvents.latestApplicationSequence;
-          const changedProjects = (yield* projects.listShells()).flatMap((project) =>
-            identities.has(project.workspaceRoot)
-              ? [{ ...project, repositoryIdentity: identities.get(project.workspaceRoot) ?? null }]
-              : [],
+          const changedProjects = yield* Effect.forEach(
+            (yield* projects.listShells()).filter((project) =>
+              ProjectEnrichmentService.projectRepositoryRoots(project).some((root) =>
+                changed.has(root),
+              ),
+            ),
+            (project) =>
+              ProjectEnrichmentService.enrichProjectShell(withChanges, project).pipe(
+                Effect.map((enriched) => enriched.project),
+              ),
+            { concurrency: 16 },
           );
           return shellStreamItemFromEnrichmentRefresh({
             snapshot: {

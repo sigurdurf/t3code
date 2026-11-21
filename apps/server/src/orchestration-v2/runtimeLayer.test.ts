@@ -1375,6 +1375,8 @@ const layerSharedApplicationDataPlaneTest = Layer.mergeAll(
           faviconPath: null,
           repositoryIdentityResolved: false,
         }),
+      getAvailableRepositoryIdentity: () =>
+        Effect.succeed({ repositoryIdentity: null, repositoryIdentityResolved: false }),
       invalidate: () => Effect.void,
       refreshRepositoryIdentity: () => Effect.void,
       subscribeChanges: Effect.never,

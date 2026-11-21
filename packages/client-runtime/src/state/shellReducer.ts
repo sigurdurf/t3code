@@ -14,6 +14,9 @@ const sameLinks = Schema.toEquivalence(Schema.UndefinedOr(Schema.Array(ThreadPul
 const sameRepositoryIdentity = Schema.toEquivalence(
   Schema.UndefinedOr(Schema.NullOr(RepositoryIdentity)),
 );
+const sameTrackedRepositoryIdentities = Schema.toEquivalence(
+  Schema.UndefinedOr(Schema.Array(RepositoryIdentity)),
+);
 
 export function sameThreadPullRequests(
   left: OrchestrationV2ThreadShell["pullRequests"],
@@ -56,18 +59,41 @@ function upsertById<T extends { readonly id: unknown }>(
   return items.map((candidate, candidateIndex) => (candidateIndex === index ? item : candidate));
 }
 
+function sameTrackedFolderPaths(
+  left: OrchestrationProjectShell,
+  right: OrchestrationProjectShell,
+): boolean {
+  const leftPaths = left.trackedFolders ?? [];
+  const rightPaths = right.trackedFolders ?? [];
+  return (
+    leftPaths.length === rightPaths.length &&
+    leftPaths.every((folder, index) => folder.path === rightPaths[index]?.path)
+  );
+}
+
 function retainRepositoryIdentity(
   previous: OrchestrationProjectShell | undefined,
   next: OrchestrationProjectShell,
 ): OrchestrationProjectShell {
+  let result = next;
   if (
-    next.repositoryIdentity == null &&
+    result.repositoryIdentity == null &&
     previous?.repositoryIdentity != null &&
-    previous.workspaceRoot === next.workspaceRoot
+    previous.workspaceRoot === result.workspaceRoot
   ) {
-    return { ...next, repositoryIdentity: previous.repositoryIdentity };
+    result = { ...result, repositoryIdentity: previous.repositoryIdentity };
   }
-  return next;
+  // An absent list means "not resolved yet" only while the project tracks the same folders; a
+  // project that stopped tracking some (or all) of them must not keep their servers.
+  if (
+    result.trackedRepositoryIdentities === undefined &&
+    previous?.trackedRepositoryIdentities !== undefined &&
+    previous.workspaceRoot === result.workspaceRoot &&
+    sameTrackedFolderPaths(previous, result)
+  ) {
+    result = { ...result, trackedRepositoryIdentities: previous.trackedRepositoryIdentities };
+  }
+  return result;
 }
 
 export interface MergeShellSnapshotOptions {
@@ -98,18 +124,46 @@ export function mergeShellSnapshotProjects(
       if (candidate === undefined || candidate.workspaceRoot !== project.workspaceRoot) {
         return project;
       }
-      if (resolvedRootSet?.has(project.workspaceRoot) === true) {
-        // Refreshes re-resolve every root; an unchanged identity keeps the project's identity
-        // so every subscriber (each pull request row, the sidebar) skips re-rendering.
-        if (sameRepositoryIdentity(project.repositoryIdentity, candidate.repositoryIdentity)) {
-          return project;
+      const rootResolved = resolvedRootSet?.has(project.workspaceRoot) === true;
+      const trackedResolved =
+        project.trackedFolders?.some((folder) => resolvedRootSet?.has(folder.path) === true) ??
+        false;
+      let updated = project;
+      if (rootResolved) {
+        if (!sameRepositoryIdentity(updated.repositoryIdentity, candidate.repositoryIdentity)) {
+          updated = { ...updated, repositoryIdentity: candidate.repositoryIdentity };
         }
-        return { ...project, repositoryIdentity: candidate.repositoryIdentity };
+      } else if (updated.repositoryIdentity == null && candidate.repositoryIdentity != null) {
+        updated = { ...updated, repositoryIdentity: candidate.repositoryIdentity };
       }
-      if (project.repositoryIdentity == null && candidate.repositoryIdentity != null) {
-        return { ...project, repositoryIdentity: candidate.repositoryIdentity };
+      if (trackedResolved) {
+        if (
+          !sameTrackedRepositoryIdentities(
+            updated.trackedRepositoryIdentities,
+            candidate.trackedRepositoryIdentities,
+          )
+        ) {
+          updated =
+            candidate.trackedRepositoryIdentities === undefined
+              ? (() => {
+                  const { trackedRepositoryIdentities: _removed, ...rest } = updated;
+                  return rest;
+                })()
+              : {
+                  ...updated,
+                  trackedRepositoryIdentities: candidate.trackedRepositoryIdentities,
+                };
+        }
+      } else if (
+        updated.trackedRepositoryIdentities === undefined &&
+        candidate.trackedRepositoryIdentities !== undefined
+      ) {
+        updated = {
+          ...updated,
+          trackedRepositoryIdentities: candidate.trackedRepositoryIdentities,
+        };
       }
-      return project;
+      return updated;
     });
     return projects.every((project, index) => project === previous.projects[index])
       ? previous

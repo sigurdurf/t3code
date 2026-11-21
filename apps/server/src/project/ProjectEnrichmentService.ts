@@ -1,4 +1,4 @@
-import type { RepositoryIdentity } from "@t3tools/contracts";
+import type { OrchestrationProjectShell, RepositoryIdentity } from "@t3tools/contracts";
 import * as Cache from "effect/Cache";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
@@ -47,6 +47,10 @@ export class ProjectEnrichmentService extends Context.Service<
     readonly peek: (workspaceRoot: string) => Effect.Effect<ProjectEnrichment>;
     readonly request: (workspaceRoot: string) => Effect.Effect<void>;
     readonly getAvailable: (workspaceRoot: string) => Effect.Effect<ProjectEnrichment>;
+    /** `getAvailable` for the repository identity alone: it neither reads nor queues a favicon. */
+    readonly getAvailableRepositoryIdentity: (
+      workspaceRoot: string,
+    ) => Effect.Effect<Omit<ProjectEnrichment, "faviconPath">>;
     readonly readRepositoryIdentity: (
       workspaceRoot: string,
     ) => Effect.Effect<RepositoryIdentity | null>;
@@ -267,23 +271,27 @@ export const make = Effect.fn("ProjectEnrichmentService.make")(function* (
   });
 
   // peek/request/getAvailable run per project on every shell read, inside the caller's span; own spans were ~0ms noise.
+  const peekRepositoryIdentity = Effect.fnUntraced(function* (workspaceRoot: string) {
+    const repositoryIdentity = yield* Cache.getSuccess(repositoryIdentityCache, workspaceRoot);
+    const repositoryIdentityResolved = isSuccessfullyResolved(repositoryIdentity);
+    return {
+      repositoryIdentity: repositoryIdentityResolved
+        ? availableValue(repositoryIdentity)
+        : (lastRepositoryIdentities.get(workspaceRoot) ?? null),
+      repositoryIdentityResolved,
+    };
+  });
+
   const peek: ProjectEnrichmentService["Service"]["peek"] = Effect.fnUntraced(
     function* (workspaceRoot) {
       const [repositoryIdentity, faviconPath] = yield* Effect.all(
         [
-          Cache.getSuccess(repositoryIdentityCache, workspaceRoot),
+          peekRepositoryIdentity(workspaceRoot),
           Cache.getSuccess(faviconCache, workspaceRoot),
         ] as const,
         { concurrency: "unbounded" },
       );
-      const repositoryIdentityResolved = isSuccessfullyResolved(repositoryIdentity);
-      return {
-        repositoryIdentity: repositoryIdentityResolved
-          ? availableValue(repositoryIdentity)
-          : (lastRepositoryIdentities.get(workspaceRoot) ?? null),
-        faviconPath: availableValue(faviconPath),
-        repositoryIdentityResolved,
-      };
+      return { ...repositoryIdentity, faviconPath: availableValue(faviconPath) };
     },
   );
 
@@ -312,6 +320,15 @@ export const make = Effect.fn("ProjectEnrichmentService.make")(function* (
       return available;
     },
   );
+
+  const getAvailableRepositoryIdentity: ProjectEnrichmentService["Service"]["getAvailableRepositoryIdentity"] =
+    Effect.fnUntraced(function* (workspaceRoot) {
+      const available = yield* peekRepositoryIdentity(workspaceRoot);
+      if (!(yield* Cache.has(repositoryIdentityCache, workspaceRoot))) {
+        yield* requestLane(repositoryIdentityLane, workspaceRoot, "repositoryIdentity");
+      }
+      return available;
+    });
 
   const readRepositoryIdentity: ProjectEnrichmentService["Service"]["readRepositoryIdentity"] =
     Effect.fn("ProjectEnrichmentService.readRepositoryIdentity")(function* (workspaceRoot) {
@@ -357,6 +374,7 @@ export const make = Effect.fn("ProjectEnrichmentService.make")(function* (
     peek,
     request,
     getAvailable,
+    getAvailableRepositoryIdentity,
     readRepositoryIdentity,
     invalidate,
     refreshRepositoryIdentity,
@@ -365,3 +383,49 @@ export const make = Effect.fn("ProjectEnrichmentService.make")(function* (
 });
 
 export const layer = Layer.effect(ProjectEnrichmentService, make());
+
+/** The folders a project's repositories are in: its root, then each tracked folder. */
+export function projectRepositoryRoots(
+  project: Pick<OrchestrationProjectShell, "workspaceRoot" | "trackedFolders">,
+): ReadonlyArray<string> {
+  return [project.workspaceRoot, ...(project.trackedFolders ?? []).map((folder) => folder.path)];
+}
+
+// Untraced: runs per project on every shell read, inside the caller's span, like `getAvailable`.
+/**
+ * A project shell with the repository identities enrichment already holds for its root and its
+ * tracked folders, without waiting on git (a probe can take a minute and exceed a shell read's
+ * budget), and the roots among them whose identity is resolved rather than last known.
+ */
+export const enrichProjectShell = Effect.fnUntraced(function* (
+  projectEnrichment: Pick<
+    ProjectEnrichmentService["Service"],
+    "getAvailable" | "getAvailableRepositoryIdentity"
+  >,
+  project: OrchestrationProjectShell,
+) {
+  const roots = projectRepositoryRoots(project);
+  // Only the root's favicon is shown, so a tracked folder asks for its identity alone.
+  const enrichments = yield* Effect.forEach(
+    roots,
+    (root, index) =>
+      index === 0
+        ? projectEnrichment.getAvailable(root)
+        : projectEnrichment.getAvailableRepositoryIdentity(root),
+    { concurrency: 8 },
+  );
+  const trackedRepositoryIdentities = enrichments
+    .slice(1)
+    .flatMap((enrichment) =>
+      enrichment.repositoryIdentity === null ? [] : [enrichment.repositoryIdentity],
+    );
+  return {
+    project: {
+      ...project,
+      repositoryIdentity: enrichments[0]?.repositoryIdentity ?? null,
+      // Absent rather than empty when none is known, as an older server sends it.
+      ...(trackedRepositoryIdentities.length > 0 ? { trackedRepositoryIdentities } : {}),
+    },
+    resolvedRoots: roots.filter((_, index) => enrichments[index]?.repositoryIdentityResolved),
+  };
+});
