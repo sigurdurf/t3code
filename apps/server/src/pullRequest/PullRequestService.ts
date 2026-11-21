@@ -1614,6 +1614,7 @@ export const make = Effect.gen(function* () {
                     number,
                   })),
                 ),
+                ...(cursor.resumeAfter === undefined ? {} : { resumeAfter: cursor.resumeAfter }),
               },
             }),
       }).pipe(
@@ -1658,7 +1659,7 @@ export const make = Effect.gen(function* () {
                 truncated: page.truncated,
                 nextCursor:
                   page.truncated && boundary !== null
-                    ? listCursorAt(cursorHere, boundary, fetched, items.length)
+                    ? listCursorAt(cursorHere, boundary, fetched, items.length, page.resumeAfter)
                     : null,
               });
             },
@@ -1676,7 +1677,9 @@ export const make = Effect.gen(function* () {
         separate.push(project);
         continue;
       }
-      const key = `${project.host}\n${cursorOf(project)?.updatedBefore ?? ""}`;
+      // One read carries on only where its repositories stopped together.
+      const cursor = cursorOf(project);
+      const key = `${project.host}\n${cursor?.updatedBefore ?? ""}\n${cursor?.resumeAfter ?? ""}`;
       const group = together.get(key);
       if (group === undefined) together.set(key, [project]);
       else group.push(project);

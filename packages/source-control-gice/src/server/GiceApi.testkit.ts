@@ -141,9 +141,17 @@ export function fakeGiceServer(
   };
 }
 
-/** A page of a listing, with the whole listing's length as Gice sends it. */
-export const listing = (items: ReadonlyArray<unknown>, total: number) =>
-  new Response(encodeJson(items), { headers: { "x-total-count": String(total) } });
+/**
+ * A page of a listing, with the whole listing's length as Gice sends it, and for a list across
+ * repositories followed by more rows, where the next page starts.
+ */
+export const listing = (items: ReadonlyArray<unknown>, total: number, next?: string) =>
+  new Response(encodeJson(items), {
+    headers: {
+      "x-total-count": String(total),
+      ...(next === undefined ? {} : { "x-next-cursor": next }),
+    },
+  });
 
 /** Gice's error body, `{"error":{"code","message"}}`. */
 export function problem(

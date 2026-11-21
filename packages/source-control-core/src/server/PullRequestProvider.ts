@@ -202,6 +202,8 @@ export interface ProviderBatchedChangeRequestPage {
    * omission rather than an empty answer, so the caller reads each on its own.
    */
   readonly unresolved?: ReadonlyArray<string>;
+  /** As `ProviderChangeRequestPage.resumeAfter`, for the next read of the same repositories. */
+  readonly resumeAfter?: string;
 }
 
 /** A check as the change request's checks name it; the host finds its log or run from the URL. */

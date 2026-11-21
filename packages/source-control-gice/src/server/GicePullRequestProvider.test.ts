@@ -310,12 +310,13 @@ describe("GicePullRequestProvider listings across repositories", () => {
     limit: 2,
   } as const;
 
-  it.effect("reads the newest updated of several repositories in one request", () => {
-    const route =
-      "GET /pulls?state=open&sort=updated&per_page=2&page=1&fields=summary&review_requested=alice&repos=team%2Fapp%2Cteam%2Fweb";
-    return withServer(
+  const ROUTE =
+    "GET /pulls?state=open&sort=updated&per_page=2&page=1&fields=summary&review_requested=alice&repos=team%2Fapp%2Cteam%2Fweb";
+
+  it.effect("reads the newest updated of several repositories in one request", () =>
+    withServer(
       {
-        [route]: listing(
+        [ROUTE]: listing(
           [
             acrossPull("team/web", 4, { updated_at: "2026-11-19T11:00:00Z" }),
             // Counts Gice has not worked out for the row's head yet.
@@ -328,12 +329,13 @@ describe("GicePullRequestProvider listings across repositories", () => {
             }),
           ],
           3,
+          "YzE6dXBkYXRlZDpkZXNjOjE3OTUxODk0NzA6MTM",
         ),
       },
       (provider) => provider.listChangeRequestsAcross!(across),
     ).pipe(
       Effect.map(({ result, gice }) => {
-        assert.deepStrictEqual(gice.paths(), [route]);
+        assert.deepStrictEqual(gice.paths(), [ROUTE]);
         assert.deepStrictEqual(
           result.items.map((item) => [
             item.repository,
@@ -347,7 +349,33 @@ describe("GicePullRequestProvider listings across repositories", () => {
             ["team/app", 9, null, false],
           ],
         );
-        assert.isTrue(result.truncated);
+        assert.deepStrictEqual(
+          [result.truncated, result.resumeAfter],
+          [true, "YzE6dXBkYXRlZDpkZXNjOjE3OTUxODk0NzA6MTM"],
+        );
+      }),
+    ),
+  );
+
+  it.effect("carries on from where Gice said its last page stopped", () => {
+    const route =
+      "GET /pulls?state=open&sort=updated&per_page=2&fields=summary&review_requested=alice&repos=team%2Fapp%2Cteam%2Fweb&cursor=YzE6dXBkYXRlZDpkZXNjOjE3OTUxODk0NzA6MTM";
+    return withServer({ [route]: listing([acrossPull("team/app", 2)], 3) }, (provider) =>
+      provider.listChangeRequestsAcross!({
+        ...across,
+        cursor: {
+          updatedBefore: "2026-11-19T09:01:40Z",
+          delivered: 2,
+          resumeAfter: "YzE6dXBkYXRlZDpkZXNjOjE3OTUxODk0NzA6MTM",
+        },
+      }),
+    ).pipe(
+      Effect.map(({ result, gice }) => {
+        assert.deepStrictEqual(gice.paths(), [route]);
+        assert.deepStrictEqual(
+          [result.items.map((item) => item.number), result.truncated, result.resumeAfter],
+          [[2], false, undefined],
+        );
       }),
     );
   });
@@ -362,15 +390,14 @@ describe("GicePullRequestProvider listings across repositories", () => {
     const input = { ...across, limit: 3 };
     return withServer(
       {
-        "GET /pulls?state=open&sort=updated&per_page=3&page=1&fields=summary&review_requested=alice&repos=team%2Fapp%2Cteam%2Fweb":
-          listing(
-            [
-              layer(7, { parent: 6, position: 2 }),
-              layer(6, { children: [7], position: 1 }),
-              unstacked,
-            ],
-            3,
-          ),
+        [ROUTE.replace("per_page=2", "per_page=3")]: listing(
+          [
+            layer(7, { parent: 6, position: 2 }),
+            layer(6, { children: [7], position: 1 }),
+            unstacked,
+          ],
+          3,
+        ),
       },
       (provider) => provider.listChangeRequestsAcross!(input),
     ).pipe(
@@ -417,7 +444,7 @@ describe("GicePullRequestProvider listings across repositories", () => {
 
   it.effect.each([
     {
-      name: "a later page",
+      name: "a page carried on from each repository's own read",
       input: { cursor: { updatedBefore: "2026-11-19T09:01:40Z", delivered: 2 } },
     },
     { name: "a checks filter", input: { filters: { checks: "passing" } } },

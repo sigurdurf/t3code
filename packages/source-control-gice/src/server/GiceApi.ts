@@ -72,6 +72,8 @@ export interface GiceList<A> {
   readonly items: ReadonlyArray<A>;
   /** The whole listing's length, from `X-Total-Count`; absent when the server sent none. */
   readonly total: number | undefined;
+  /** Where a list across repositories goes on, from `X-Next-Cursor`; absent on its last page. */
+  readonly next?: string;
 }
 
 export class GiceApi extends Context.Service<
@@ -326,6 +328,7 @@ const make = Effect.gen(function* () {
           status: response.status,
           retryAfter: response.headers["retry-after"],
           totalCount: response.headers["x-total-count"],
+          nextCursor: response.headers["x-next-cursor"],
           wwwAuthenticate: response.headers["www-authenticate"],
           text: yield* response.text,
         };
@@ -350,7 +353,7 @@ const make = Effect.gen(function* () {
         reply = yield* send(credential);
       }
     }
-    const { status, retryAfter, totalCount, text } = reply;
+    const { status, retryAfter, totalCount, nextCursor, text } = reply;
     yield* Effect.annotateCurrentSpan({ "http.response.status_code": status });
     if (status >= 200 && status < 300) {
       yield* limits.recordSuccess({ ...key, lease });
@@ -359,6 +362,7 @@ const make = Effect.gen(function* () {
         text,
         total:
           totalCount !== undefined && Number.isSafeInteger(total) && total >= 0 ? total : undefined,
+        ...(nextCursor ? { next: nextCursor } : {}),
       };
     }
     const retryAt =
@@ -415,8 +419,14 @@ const make = Effect.gen(function* () {
     exchange(input).pipe(Effect.flatMap(({ text }) => decode(input, schema, text)));
   const readList = <S extends Decodable>(input: GiceApiRequest, item: S) =>
     exchange(input).pipe(
-      Effect.flatMap(({ text, total }) =>
-        decode(input, Schema.Array(item), text).pipe(Effect.map((items) => ({ items, total }))),
+      Effect.flatMap(({ text, total, next }) =>
+        decode(input, Schema.Array(item), text).pipe(
+          Effect.map((items): GiceList<S["Type"]> => ({
+            items,
+            total,
+            ...(next === undefined ? {} : { next }),
+          })),
+        ),
       ),
     );
 

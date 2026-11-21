@@ -409,15 +409,23 @@ export const make = Effect.gen(function* () {
         cursorAdvance: rows.length,
       };
     }),
-    // Gice pages by offset, not from a time, so one read across repositories serves a first
-    // page; later pages, and a checks filter it has no parameter for, read each repository.
+    // Gice carries a read across repositories on from where its last page stopped; one carried on
+    // from a read of each repository, and a checks filter it has no parameter for, read each.
     listChangeRequestsAcross: Effect.fn("GicePullRequestProvider.listChangeRequestsAcross")(
       function* (input) {
-        if (input.cursor !== undefined || input.filters?.checks !== undefined)
+        const resumeAfter = input.cursor?.resumeAfter;
+        if (
+          (input.cursor !== undefined && resumeAfter === undefined) ||
+          input.filters?.checks !== undefined
+        )
           return { items: [], truncated: false, unresolved: input.repositories };
         const pageSize = Math.min(Math.max(1, input.limit), PAGE_SIZE);
         const query = listQuery(input, pageSize, 1);
         query.set("repos", input.repositories.join(","));
+        if (resumeAfter !== undefined) {
+          query.delete("page");
+          query.set("cursor", resumeAfter);
+        }
         const listed = yield* readList(
           "listChangeRequestsAcross",
           { host: input.host },
@@ -454,7 +462,8 @@ export const make = Effect.gen(function* () {
               ? []
               : [Json.toAcrossChangeRequest(pull, byRepository.get(key)!)];
           }),
-          truncated: GiceApi.listContinues(listed, listed.items.length, pageSize),
+          truncated: listed.next !== undefined,
+          ...(listed.next === undefined ? {} : { resumeAfter: listed.next }),
           ...(unresolved.length === 0 ? {} : { unresolved }),
         };
       },

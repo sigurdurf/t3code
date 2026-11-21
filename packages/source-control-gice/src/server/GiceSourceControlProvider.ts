@@ -57,6 +57,7 @@ export const REQUIRED_FEATURES = [
   "pull_stacks",
   "pull_stack_actions",
   "delete_branch_on_merge",
+  "cross_repo_cursor",
   "link_draft_count",
   "cross_repo_stacks",
   "stack_bottom",
