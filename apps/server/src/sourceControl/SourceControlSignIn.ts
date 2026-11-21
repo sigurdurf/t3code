@@ -26,6 +26,9 @@ export class SourceControlSignIn extends Context.Service<
     readonly cancel: (
       input: SourceControlSignInInput,
     ) => Effect.Effect<void, SourceControlSignInError>;
+    readonly signOut: (
+      input: SourceControlSignInInput,
+    ) => Effect.Effect<void, SourceControlSignInError>;
     readonly access: (input: SourceControlAppAccessInput) => Effect.Effect<SourceControlAppAccess>;
     readonly starred: (input: SourceControlStarredInput) => Effect.Effect<boolean>;
     readonly star: (input: SourceControlStarredInput) => Effect.Effect<boolean>;
@@ -59,11 +62,14 @@ const make = Effect.gen(function* () {
     cancel: Effect.fn("SourceControlSignIn.cancel")(function* (input) {
       return yield* (yield* signInFor(input)).cancel(input.host);
     }),
+    signOut: Effect.fn("SourceControlSignIn.signOut")(function* (input) {
+      return yield* (yield* signInFor(input)).signOut(input.host);
+    }),
     access: Effect.fn("SourceControlSignIn.access")(function* (input) {
-      const signIn = drivers.find(({ driver }) => driver.kind === input.provider)?.instance.signIn;
+      const access = drivers.find(({ driver }) => driver.kind === input.provider)?.instance.signIn
+        ?.access;
       return {
-        status:
-          signIn === undefined ? "signed-out" : yield* signIn.access(input.host, input.repository),
+        status: access === undefined ? "signed-out" : yield* access(input.host, input.repository),
       } satisfies SourceControlAppAccess;
     }),
     starred: Effect.fn("SourceControlSignIn.starred")(function* (input) {

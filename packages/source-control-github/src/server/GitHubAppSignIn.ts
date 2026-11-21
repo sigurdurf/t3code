@@ -92,6 +92,8 @@ export class GitHubAppSignIn extends Context.Service<
     /** Resolves once the sign-in `start` began has saved a session. */
     readonly wait: (host: string) => Effect.Effect<void, SourceControlSignInError>;
     readonly cancel: (host: string) => Effect.Effect<void>;
+    /** Forgets the session; GitHub ends an app's grant only for a client with a secret. */
+    readonly signOut: (host: string) => Effect.Effect<void, SourceControlSignInError>;
   }
 >()("@t3tools/source-control-github/server/GitHubAppSignIn") {}
 
@@ -467,7 +469,28 @@ export const make = Effect.gen(function* () {
     },
   );
 
-  return GitHubAppSignIn.of({ enabled, token, invalidate, start, wait, cancel });
+  const signOut: GitHubAppSignIn["Service"]["signOut"] = Effect.fn("GitHubAppSignIn.signOut")(
+    function* (rawHost) {
+      const host = rawHost.trim().toLowerCase();
+      // Behind the refresh lock, so a refresh in flight cannot save the session back.
+      yield* refreshLock
+        .withPermits(1)(writeSession(host, null))
+        .pipe(
+          Effect.mapError(
+            (cause) =>
+              new SourceControlSignInError({
+                provider: KIND,
+                host,
+                reason: "failed",
+                detail: "The server could not save the sign-out.",
+                cause,
+              }),
+          ),
+        );
+    },
+  );
+
+  return GitHubAppSignIn.of({ enabled, token, invalidate, start, wait, cancel, signOut });
 });
 
 export const layer = Layer.effect(GitHubAppSignIn, make);

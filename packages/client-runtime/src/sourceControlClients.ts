@@ -5,7 +5,13 @@ import {
   type SourceControlAppSignIn,
   type SourceControlDefinition,
 } from "@t3tools/source-control-core/shared/definition";
-import type { ServerSettings, SourceControlAppAccessInput } from "@t3tools/contracts";
+import type {
+  ClientServerSettingsPatch,
+  ExecutionEnvironmentCapabilities,
+  ServerSettings,
+  SourceControlAppAccessInput,
+  SourceControlSignInInput,
+} from "@t3tools/contracts";
 import { parseGitRemoteRepository } from "@t3tools/shared/git";
 
 export {
@@ -31,6 +37,27 @@ export function readHostCredentialSettings(
   kind: string,
 ): HostCredentialSettings {
   return readSourceControlHostSettings(HostCredentialSettings, settings.sourceControlHosts[kind]);
+}
+
+/**
+ * How a client signs out of an app sign-in: through the host's driver where the server serves
+ * `sourceControl.signOut`, else as servers before it expect, by clearing the saved sign-in.
+ */
+export function appSignOutRequest(
+  capabilities: Pick<ExecutionEnvironmentCapabilities, "sourceControlSignOut"> | undefined,
+  input: SourceControlSignInInput,
+  signIns: Readonly<Record<string, string>>,
+):
+  | { readonly via: "sign-out"; readonly input: SourceControlSignInInput }
+  | { readonly via: "settings"; readonly patch: typeof ClientServerSettingsPatch.Type } {
+  if (capabilities?.sourceControlSignOut === true) return { via: "sign-out", input };
+  return {
+    via: "settings",
+    // The whole map: other hosts' redaction markers keep their sign-ins.
+    patch: {
+      sourceControlHosts: { [input.provider]: { signIns: { ...signIns, [input.host]: "" } } },
+    },
+  };
 }
 
 /** A host's change request term where it opens a sentence: "Merge request merged". */

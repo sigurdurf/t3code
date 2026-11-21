@@ -86,6 +86,10 @@ export function createSourceControlEnvironmentAtoms<R, E>(
       label: "environment-data:source-control:sign-in-cancel",
       tag: WS_METHODS.sourceControlSignInCancel,
     }),
+    signOut: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:source-control:sign-out",
+      tag: WS_METHODS.sourceControlSignOut,
+    }),
     projectClones: createEnvironmentRpcSubscriptionAtomFamily(runtime, {
       label: "environment-data:source-control:project-clones",
       tag: WS_METHODS.subscribeProjectClones,

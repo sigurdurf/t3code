@@ -2,6 +2,7 @@ import { errorDisplayMessage } from "@t3tools/client-runtime/errors";
 import { useGT } from "gt-react-native";
 import type { SourceControlSignInPrompt } from "@t3tools/contracts";
 import {
+  appSignOutRequest,
   readHostCredentialSettings,
   type SourceControlAppSignIn,
   type SourceControlDefinition,
@@ -49,7 +50,10 @@ export function AppSignInRow(props: {
   // The attempt a pending `wait` belongs to; a cancel or a newer attempt makes its outcome stale.
   const attempt = useRef<SourceControlSignInPrompt | null>(null);
   const input = { provider: definition.kind, host };
-  const updateSettings = useAtomCommand(serverEnvironment.updateSettings, {
+  const signOutOf = useAtomCommand(sourceControlEnvironment.signOut, {
+    label: `sign out of ${appSignIn.appName}`,
+  });
+  const clearSignIn = useAtomCommand(serverEnvironment.updateSettings, {
     label: `sign out of ${appSignIn.appName}`,
   });
   const [pending, setPending] = useState<SourceControlSignInPrompt | "starting" | null>(null);
@@ -101,16 +105,16 @@ export function AppSignInRow(props: {
     }
   };
 
-  const signOut = () =>
-    void updateSettings({
-      environmentId,
-      // Send the whole map; other hosts' redaction markers preserve their sessions.
-      input: {
-        patch: {
-          sourceControlHosts: { [definition.kind]: { signIns: { ...signIns, [host]: "" } } },
-        },
-      },
-    });
+  const signOut = () => {
+    const request = appSignOutRequest(
+      environment.serverConfig.environment.capabilities,
+      input,
+      signIns,
+    );
+    void (request.via === "sign-out"
+      ? signOutOf({ environmentId, input: request.input })
+      : clearSignIn({ environmentId, input: { patch: request.patch } }));
+  };
 
   const installUrl = appSignIn.installUrl;
   const onPress = () => {

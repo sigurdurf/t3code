@@ -2,7 +2,11 @@ import { ProjectId, SourceControlProviderKind } from "@t3tools/contracts";
 import { makeBuiltInSourceControlDefinitions } from "@t3tools/source-control-definitions/registry";
 import { describe, expect, it } from "vite-plus/test";
 
-import { appSignInTargetForRemote, sourceControlClients } from "./sourceControlClients.ts";
+import {
+  appSignInTargetForRemote,
+  appSignOutRequest,
+  sourceControlClients,
+} from "./sourceControlClients.ts";
 import { normalizeThreadPullRequestKey } from "./threadPullRequests.ts";
 
 const parse = (url: string) => {
@@ -459,5 +463,30 @@ describe("appSignInTargetForRemote", () => {
   it("skips hosts the app is not registered on", () => {
     expect(appSignInTargetForRemote("https://ghe.acme.test/acme/web.git")).toBeNull();
     expect(appSignInTargetForRemote("https://gitlab.com/acme/web.git")).toBeNull();
+  });
+});
+
+describe("appSignOutRequest", () => {
+  const input = { provider: SourceControlProviderKind.make("github"), host: "github.com" };
+  const signIns = { "github.com": "__redacted__", "ghe.acme.test": "__redacted__" };
+
+  it("signs out through the driver where the server serves it", () => {
+    expect(appSignOutRequest({ sourceControlSignOut: true }, input, signIns)).toEqual({
+      via: "sign-out",
+      input,
+    });
+  });
+
+  it("clears the saved sign-in on an older server, keeping other hosts' sign-ins", () => {
+    for (const capabilities of [{}, undefined]) {
+      expect(appSignOutRequest(capabilities, input, signIns)).toEqual({
+        via: "settings",
+        patch: {
+          sourceControlHosts: {
+            github: { signIns: { "github.com": "", "ghe.acme.test": "__redacted__" } },
+          },
+        },
+      });
+    }
   });
 });

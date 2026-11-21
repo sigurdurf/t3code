@@ -2,6 +2,7 @@ import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
 import { m } from "~/i18n/messages";
 import type { EnvironmentId, SourceControlSignInPrompt } from "@t3tools/contracts";
 import {
+  appSignOutRequest,
   readHostCredentialSettings,
   type SourceControlAppSignIn,
   type SourceControlDefinition,
@@ -16,6 +17,7 @@ import { T3AppIcon } from "~/components/T3AppIcon";
 import { useCopyToClipboard } from "~/hooks/useCopyToClipboard";
 import { useEnvironmentSettings } from "../../hooks/useSettings";
 import { cn } from "../../lib/utils";
+import { useServerConfigs } from "../../state/entities";
 import { serverEnvironment } from "../../state/server";
 import { sourceControlEnvironment } from "../../state/sourceControl";
 import { useAtomCommand } from "../../state/use-atom-command";
@@ -112,9 +114,13 @@ export function SourceControlAppSignInSettings({
   const start = useAtomCommand(sourceControlEnvironment.startSignIn, { reportFailure: false });
   const wait = useAtomCommand(sourceControlEnvironment.waitForSignIn, { reportFailure: false });
   const cancel = useAtomCommand(sourceControlEnvironment.cancelSignIn, { reportFailure: false });
-  const updateSettings = useAtomCommand(serverEnvironment.updateSettings, {
+  const signOutOf = useAtomCommand(sourceControlEnvironment.signOut, {
     label: `sign out of ${appSignIn.appName}`,
   });
+  const clearSignIn = useAtomCommand(serverEnvironment.updateSettings, {
+    label: `sign out of ${appSignIn.appName}`,
+  });
+  const capabilities = useServerConfigs().get(environmentId)?.environment.capabilities;
   const { copyToClipboard, isCopied } = useCopyToClipboard({
     timeout: 1500,
     target: {
@@ -148,16 +154,13 @@ export function SourceControlAppSignInSettings({
 
   const signOut = async () => {
     setState({ status: "idle" });
-    const result = await updateSettings({
-      environmentId,
-      // Send the whole map; other hosts' redaction markers preserve their sessions.
-      input: {
-        patch: {
-          sourceControlHosts: { [definition.kind]: { signIns: { ...signIns, [host]: "" } } },
-        },
-      },
-    });
-    if (result._tag === "Success") onChanged();
+    const request = appSignOutRequest(capabilities, { provider: definition.kind, host }, signIns);
+    // The command reports a failure. A host may fail after forgetting the sign-in here (it
+    // could not be told), so rescan on every outcome; rescanning an unchanged host is harmless.
+    await (request.via === "sign-out"
+      ? signOutOf({ environmentId, input: request.input })
+      : clearSignIn({ environmentId, input: { patch: request.patch } }));
+    onChanged();
   };
 
   const waiting = !signedIn && state.status === "waiting" ? state.prompt : null;
