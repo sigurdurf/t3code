@@ -15,9 +15,11 @@ import * as PlatformError from "effect/PlatformError";
 import * as Schema from "effect/Schema";
 import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import * as HttpClient from "effect/http/HttpClient";
+import * as HttpClientError from "effect/http/HttpClientError";
 import * as HttpClientResponse from "effect/http/HttpClientResponse";
 
 import * as GiceApi from "./GiceApi.ts";
+import * as GiceAppSignIn from "./GiceAppSignIn.ts";
 import * as GiceCredentials from "./GiceCredentials.ts";
 
 export const encodeJson = Schema.encodeSync(Schema.fromJsonString(Schema.Unknown));
@@ -35,6 +37,11 @@ export interface SentRequest {
   readonly body: unknown;
 }
 
+/** A route's answer for a request that never reached the server. */
+export const UNREACHABLE: unique symbol = Symbol("unreachable");
+/** A route's answer for a server that takes the request and never answers. */
+export const STALLED: unique symbol = Symbol("stalled");
+
 type Route = unknown | Response | ((request: SentRequest) => unknown);
 
 const notFound = () => problem(404, "not_found", "not found");
@@ -50,6 +57,7 @@ export function fakeGiceServer(
     readonly env?: NodeJS.ProcessEnv;
     readonly files?: Readonly<Record<string, string>>;
     readonly git?: Partial<SourceControlHost.SourceControlHost["Service"]["git"]>;
+    readonly process?: Partial<SourceControlHost.SourceControlHost["Service"]["process"]>;
   } = {},
 ) {
   const sent: Array<SentRequest> = [];
@@ -63,15 +71,24 @@ export function fakeGiceServer(
       authorization: request.headers.authorization,
       redirect: Context.getOrUndefined(fiber.context, FetchHttpClient.RequestInit)?.redirect,
       body:
-        request.body._tag === "Uint8Array"
-          ? decodeJson(new TextDecoder().decode(request.body.body))
-          : undefined,
+        request.body._tag !== "Uint8Array"
+          ? undefined
+          : request.body.contentType === "application/x-www-form-urlencoded"
+            ? Object.fromEntries(new URLSearchParams(new TextDecoder().decode(request.body.body)))
+            : decodeJson(new TextDecoder().decode(request.body.body)),
     };
     sent.push(entry);
     const route =
       routes[`${entry.method} ${entry.path}`] ??
       routes[`${entry.method} ${url.pathname.replace(/^\/api\/v1/u, "")}`];
     const answer = typeof route === "function" ? route(entry) : route;
+    if (answer === STALLED) return Effect.never;
+    if (answer === UNREACHABLE)
+      return Effect.fail(
+        new HttpClientError.HttpClientError({
+          reason: new HttpClientError.TransportError({ request, cause: new Error("unreachable") }),
+        }),
+      );
     const response =
       answer === undefined
         ? notFound()
@@ -82,8 +99,14 @@ export function fakeGiceServer(
   });
   const layer = GiceApi.layer.pipe(
     Layer.provideMerge(GiceCredentials.layer),
+    Layer.provideMerge(GiceAppSignIn.layer),
     Layer.provideMerge(SourceControlRateLimit.layer),
-    Layer.provideMerge(TestSourceControlHost.layer(options.git ? { git: options.git } : {})),
+    Layer.provideMerge(
+      TestSourceControlHost.layer({
+        ...(options.git ? { git: options.git } : {}),
+        ...(options.process ? { process: options.process } : {}),
+      }),
+    ),
     Layer.provideMerge(
       FileSystem.layerNoop({
         readFileString: (path) =>
@@ -106,6 +129,7 @@ export function fakeGiceServer(
       ),
     ),
     Layer.provide(Layer.succeed(HostProcess.HomeDirectory, "/home/alice")),
+    Layer.provide(Layer.succeed(HostProcess.Hostname, "devbox")),
     Layer.provideMerge(Layer.succeed(HttpClient.HttpClient, client)),
   );
   const routeOf = (request: SentRequest) => `${request.method} ${request.path}`;

@@ -1,27 +1,39 @@
 import { assert, describe, it } from "@effect/vitest";
 import { SecretProviderId, type ServerSettingsPatch } from "@t3tools/contracts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import type * as SourceControlHost from "@t3tools/source-control-core/server/SourceControlHost";
 import * as TestSourceControlHost from "@t3tools/source-control-testing/TestSourceControlHost";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 import * as PlatformError from "effect/PlatformError";
 import * as Redacted from "effect/Redacted";
+import * as HttpClient from "effect/http/HttpClient";
 import * as TestClock from "effect/testing/TestClock";
 
+import * as GiceAppSignIn from "./GiceAppSignIn.ts";
 import * as GiceCredentials from "./GiceCredentials.ts";
 
 const LOGIN = '{"host":"https://gice.example","token":"login-token","vcs":"jj"}';
 const LOGIN_FILE = "/home/alice/.config/gice/config.json";
 
-/** `reads` counts the reads of each file. */
+/** `reads` counts the reads of each file; `run` stands in for the `gice` command. */
 function harness(
   env: NodeJS.ProcessEnv,
   files: Readonly<Record<string, string>>,
   reads: Record<string, number> = {},
+  run?: SourceControlHost.SourceControlHost["Service"]["process"]["run"],
 ) {
   return GiceCredentials.layer.pipe(
-    Layer.provideMerge(TestSourceControlHost.layer()),
+    Layer.provideMerge(GiceAppSignIn.layer),
+    Layer.provideMerge(TestSourceControlHost.layer(run === undefined ? {} : { process: { run } })),
+    // Nothing here signs in, so nothing may reach a server.
+    Layer.provide(
+      Layer.succeed(
+        HttpClient.HttpClient,
+        HttpClient.make((request) => Effect.die(`Unexpected request to ${request.url}`)),
+      ),
+    ),
     Layer.provide(
       FileSystem.layerNoop({
         readFileString: (path) => {
@@ -58,6 +70,15 @@ const tokenFor = (host: string) =>
 const failureFor = (host: string) =>
   GiceCredentials.GiceCredentials.use((credentials) => Effect.flip(credentials.get(host))).pipe(
     Effect.map((error) => error._tag),
+  );
+
+/** What GiceApi does when the server refuses the credential it got for `host`. */
+const refuse = (host: string) =>
+  GiceCredentials.GiceCredentials.use((credentials) =>
+    credentials.get(host).pipe(
+      Effect.flatMap((credential) => credentials.rejected(credential, undefined)),
+      Effect.ignore,
+    ),
   );
 
 const saveSettings = (patch: ServerSettingsPatch) =>
@@ -149,15 +170,16 @@ describe("GiceCredentials", () => {
         assert.strictEqual(yield* tokenFor("gice.example"), "login-token");
         yield* relogin("new-login-token");
         assert.strictEqual(yield* tokenFor("gice.example"), "login-token");
-        yield* GiceCredentials.GiceCredentials.use((credentials) => credentials.invalidate);
+        yield* refuse("gice.example");
         assert.strictEqual(yield* tokenFor("gice.example"), "new-login-token");
       }).pipe(Effect.provide(layer)),
     );
 
     it.effect("is read again ten seconds after it was missing", () =>
       Effect.gen(function* () {
+        yield* refuse("gice.example");
         delete files[LOGIN_FILE];
-        yield* GiceCredentials.GiceCredentials.use((credentials) => credentials.invalidate);
+        yield* refuse("gice.example");
         assert.strictEqual(yield* failureFor("gice.example"), "GiceNotSignedInError");
         yield* relogin("login-token");
         yield* TestClock.adjust("9 seconds");
@@ -175,6 +197,111 @@ describe("GiceCredentials", () => {
         yield* TestClock.adjust("5 minutes");
         assert.strictEqual(yield* tokenFor("gice.example"), "new-login-token");
       }).pipe(Effect.provide(layer)),
+    );
+  });
+
+  describe("an expiring gice login from a browser sign-in", () => {
+    const expiring = (token: string, expiresAt: string) =>
+      JSON.stringify({
+        host: "https://gice.example",
+        token,
+        refresh_token: "gicerf_cli",
+        token_expires_at: expiresAt,
+      });
+    // The test clock starts at 0: 1970-01-01T00:00:00Z.
+    const runs: Array<{ readonly args: ReadonlyArray<string>; readonly env: unknown }> = [];
+    const renewing = (files: Record<string, string>, next: string | null) =>
+      ((input) =>
+        Effect.sync(() => {
+          runs.push({ args: [input.command, ...input.args], env: input.env });
+          if (next !== null) files[LOGIN_FILE] = next;
+          return TestSourceControlHost.processOutput("https://gice.example\nLogged in as alice\n");
+        })) satisfies SourceControlHost.SourceControlHost["Service"]["process"]["run"];
+
+    it.effect("uses the token while it has more than five minutes left", () => {
+      const files = { [LOGIN_FILE]: expiring("gicet_live", "1970-01-01T08:00:00Z") };
+      return Effect.gen(function* () {
+        assert.strictEqual(yield* tokenFor("gice.example"), "gicet_live");
+      }).pipe(Effect.provide(harness({}, files, {}, renewing(files, null))));
+    });
+
+    it.effect(
+      "has gice renew it near expiry and reads the renewed token, never refreshing it itself",
+      () => {
+        runs.length = 0;
+        const files: Record<string, string> = {
+          [LOGIN_FILE]: expiring("gicet_old", "1970-01-01T00:04:00Z"),
+        };
+        return Effect.gen(function* () {
+          assert.strictEqual(yield* tokenFor("gice.example"), "gicet_new");
+          assert.deepStrictEqual(runs, [
+            { args: ["gice", "auth", "status"], env: { GICE_HOST: "", GICE_TOKEN: "" } },
+          ]);
+        }).pipe(
+          Effect.provide(
+            harness({}, files, {}, renewing(files, expiring("gicet_new", "1970-01-01T08:00:00Z"))),
+          ),
+        );
+      },
+    );
+
+    it.effect(
+      "says to run gice when gice could not renew it, and asks gice again only after a while",
+      () => {
+        runs.length = 0;
+        const files: Record<string, string> = {
+          [LOGIN_FILE]: expiring("gicet_old", "1970-01-01T00:00:00Z"),
+        };
+        return Effect.gen(function* () {
+          const credentials = yield* GiceCredentials.GiceCredentials;
+          assert.strictEqual(yield* failureFor("gice.example"), "GiceCliLoginExpiredError");
+          assert.strictEqual(yield* failureFor("gice.example"), "GiceCliLoginExpiredError");
+          assert.lengthOf(runs, 1);
+          yield* TestClock.adjust("11 seconds");
+          assert.strictEqual(yield* failureFor("gice.example"), "GiceCliLoginExpiredError");
+          assert.lengthOf(runs, 2);
+          // A new login is taken at once.
+          files[LOGIN_FILE] = expiring("gicet_new", "1970-01-01T00:00:00Z");
+          assert.strictEqual(yield* failureFor("gice.example"), "GiceCliLoginExpiredError");
+          assert.lengthOf(runs, 3);
+
+          // A token the server refused as expired that gice cannot renew is asked about once too.
+          files[LOGIN_FILE] = expiring("gicet_skewed", "1970-01-01T08:00:00Z");
+          const refused = yield* credentials.get("gice.example");
+          yield* credentials.rejected(refused, "token_expired");
+          yield* credentials.rejected(refused, "token_expired");
+          assert.lengthOf(runs, 4);
+        }).pipe(Effect.provide(harness({}, files, {}, renewing(files, null))));
+      },
+    );
+
+    it.effect(
+      "renews through gice when the server reports token_expired despite a future local expiry",
+      () => {
+        runs.length = 0;
+        const files: Record<string, string> = {
+          [LOGIN_FILE]: expiring("gicet_skewed", "1970-01-01T08:00:00Z"),
+        };
+        return Effect.gen(function* () {
+          const credentials = yield* GiceCredentials.GiceCredentials;
+          const first = yield* credentials.get("gice.example");
+          assert.strictEqual(Redacted.value(first.token), "gicet_skewed");
+          yield* credentials.rejected(first, "token_expired");
+          assert.strictEqual(yield* tokenFor("gice.example"), "gicet_renewed");
+          assert.deepStrictEqual(runs, [
+            { args: ["gice", "auth", "status"], env: { GICE_HOST: "", GICE_TOKEN: "" } },
+          ]);
+        }).pipe(
+          Effect.provide(
+            harness(
+              {},
+              files,
+              {},
+              renewing(files, expiring("gicet_renewed", "1970-01-01T08:00:00Z")),
+            ),
+          ),
+        );
+      },
     );
   });
 

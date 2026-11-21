@@ -129,12 +129,18 @@ export const definition = defineSourceControl({
   credentials: {
     cliName: "gice",
     cliLabel: "Gice CLI",
-    loginCommand: "gice auth login --host <server-url> --username <username>",
+    loginCommand: "gice auth login --host <server-url>",
     tokenEnvVar: "GICE_TOKEN",
     tokenAccess: "repo:write, issues:write, and workflows:write scopes",
     // The page names the new token; the user still creates it.
     newTokenUrl: (address) =>
       `${parseGiceServer(address)?.baseUrl ?? `https://${address}`}/settings/tokens?name=T3%20Code`,
+    // Gice has no app registration: the device flow signs in to whichever server the user names.
+    appSignIn: {
+      appName: "T3 Code",
+      revokeUrl: (address) =>
+        `${parseGiceServer(address)?.baseUrl ?? `https://${address}`}/settings/tokens`,
+    },
   },
   changeRequest: {
     shortLabel: "PR",

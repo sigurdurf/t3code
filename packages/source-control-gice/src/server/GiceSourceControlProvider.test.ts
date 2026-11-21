@@ -79,7 +79,7 @@ describe("GiceSourceControlProvider discovery", () => {
       meta: meta(),
       status: "unauthenticated",
       detail:
-        "Gice refused the token for code.example. Replace it in Settings, or run `gice auth login --host https://code.example --username <username>`.",
+        "Gice refused the token for code.example. Replace it in Settings, or run `gice auth login --host https://code.example`.",
     },
     {
       name: "a server that cannot answer",

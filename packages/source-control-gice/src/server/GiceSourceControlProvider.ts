@@ -30,6 +30,7 @@ import * as Schema from "effect/Schema";
 import { definition, parseGiceServer } from "../shared/definition.ts";
 
 import * as GiceApi from "./GiceApi.ts";
+import * as GiceAppSignIn from "./GiceAppSignIn.ts";
 import * as GiceCredentials from "./GiceCredentials.ts";
 import { decodeMeta } from "./giceHttp.ts";
 import * as Json from "./gicePullRequestJson.ts";
@@ -37,7 +38,7 @@ import * as Json from "./gicePullRequestJson.ts";
 const KIND = definition.kind;
 const PROBE_TIMEOUT = "3 seconds";
 // Clients translate this exact text (client-runtime contractLabels.ts): change both together.
-const INSTALL_HINT = `Save your Gice server's address and an access token in Settings, set GICE_HOST and GICE_TOKEN on the server, or run \`${definition.credentials.loginCommand}\`.`;
+const INSTALL_HINT = `Sign in to your Gice server or save an access token in Settings, set GICE_HOST and GICE_TOKEN on the server, or run \`${definition.credentials.loginCommand}\`.`;
 
 /** The `GET /meta` features T3 Code relies on beyond Gice's first API. */
 export const REQUIRED_FEATURES = [
@@ -187,6 +188,7 @@ function pullRequestTemplate(
 export const makeDiscovery = Effect.gen(function* () {
   const api = yield* GiceApi.GiceApi;
   const credentials = yield* GiceCredentials.GiceCredentials;
+  const signIns = yield* GiceAppSignIn.GiceAppSignIn;
   const decodeUser = Schema.decodeUnknownOption(Schema.fromJsonString(User));
 
   const probeServer = Effect.fn("GiceSourceControlProvider.probeServer")(function* (
@@ -207,8 +209,8 @@ export const makeDiscovery = Effect.gen(function* () {
         host,
         // A token that could not be read never reached the server, which says so in the detail.
         detail:
-          user.failure.status === 401
-            ? `Gice refused the token for ${host}. Replace it in Settings, or run \`gice auth login --host ${credential.baseUrl} --username <username>\`.`
+          user.failure.status === 401 && credential.source !== "app"
+            ? `Gice refused the token for ${host}. Replace it in Settings, or run \`gice auth login --host ${credential.baseUrl}\`.`
             : user.failure.detail,
       } as const;
     if (Result.isFailure(meta))
@@ -231,8 +233,15 @@ export const makeDiscovery = Effect.gen(function* () {
 
   const probeAuth = Effect.gen(function* () {
     const held = yield* credentials.all;
+    // Why a sign-in ended, or what it lacks, for a server signed in from the app.
+    const notes = yield* signIns.notes;
     if (held.length === 0)
-      return { auth: providerAuth({ status: "unauthenticated", detail: INSTALL_HINT }) };
+      return {
+        auth: providerAuth({
+          status: "unauthenticated",
+          detail: [...notes.values(), INSTALL_HINT].join(" "),
+        }),
+      };
     // A server turned off in Settings is asked nothing, yet keeps its row so Settings can turn it
     // back on.
     const servers = yield* Effect.forEach(
@@ -241,9 +250,14 @@ export const makeDiscovery = Effect.gen(function* () {
       { concurrency: "unbounded" },
     );
     const chosen = servers.find((server) => server.status === "authenticated") ?? servers[0];
-    const problems = servers.flatMap((server) =>
-      server.detail === undefined ? [] : [server.detail],
-    );
+    const problems = [
+      ...servers.flatMap((server) => (server.detail === undefined ? [] : [server.detail])),
+      ...[...notes]
+        .filter(([host]) =>
+          servers.every((server) => server.host !== host || server.detail === undefined),
+        )
+        .map(([, note]) => note),
+    ];
     return {
       version: chosen?.version,
       auth: {
@@ -299,6 +313,7 @@ export const makeDiscovery = Effect.gen(function* () {
     kind: KIND,
     label: definition.label,
     installHint: INSTALL_HINT,
+    appSignIn: true,
     probeAuth: probeAuth.pipe(Effect.map(({ version, auth }) => ({ ...auth, version }))),
     // A Gice server has no telling name: the remote is one when a credential names its host, or
     // names its SSH host whatever the port, since one server may listen on several.

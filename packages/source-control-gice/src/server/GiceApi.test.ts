@@ -1,5 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import * as SourceControlRateLimit from "@t3tools/source-control-core/server/SourceControlRateLimit";
+import * as TestSourceControlHost from "@t3tools/source-control-testing/TestSourceControlHost";
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -76,6 +77,46 @@ describe("GiceApi", () => {
         sent.map((request) => request.authorization),
         ["Bearer old", "Bearer new"],
       );
+    }).pipe(Effect.provide(layer));
+  });
+
+  it.effect("reports a refused token once, even when renewing it hands back the same one", () => {
+    // A browser login Gice calls expired (clock skew) that `gice` cannot renew.
+    const files = {
+      "/home/alice/.config/gice/config.json": JSON.stringify({
+        host: "https://code.example",
+        token: "gicet_skewed",
+        refresh_token: "gicerf_cli",
+        token_expires_at: "1970-01-01T08:00:00Z",
+      }),
+    };
+    const runs: Array<ReadonlyArray<string>> = [];
+    const { layer, sent } = fakeGiceServer(
+      {
+        "GET /user": new Response(
+          JSON.stringify({
+            error: { code: "unauthorized", message: "expired", reason: "token_expired" },
+          }),
+          { status: 401 },
+        ),
+      },
+      {
+        env: {},
+        files,
+        process: {
+          run: (input) =>
+            Effect.sync(() => {
+              runs.push([input.command, ...input.args]);
+              return TestSourceControlHost.processOutput("");
+            }),
+        },
+      },
+    );
+    return Effect.gen(function* () {
+      const refused = yield* Effect.flip(ask({ path: "/user" }));
+      assert.strictEqual(refused.status, 401);
+      assert.strictEqual(sent.length, 1);
+      assert.deepStrictEqual(runs, [["gice", "auth", "status"]]);
     }).pipe(Effect.provide(layer));
   });
 

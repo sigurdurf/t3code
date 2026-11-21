@@ -12,8 +12,9 @@ import * as HttpClient from "effect/http/HttpClient";
 import * as HttpClientRequest from "effect/http/HttpClientRequest";
 
 import { definition } from "../shared/definition.ts";
+import * as GiceAppSignIn from "./GiceAppSignIn.ts";
 import * as GiceCredentials from "./GiceCredentials.ts";
-import { decodeProblem, GiceProblem, NO_REDIRECT } from "./giceHttp.ts";
+import { decodeProblem, GiceProblem, NO_REDIRECT, SETTINGS_PATH } from "./giceHttp.ts";
 
 const TIMEOUT = Duration.seconds(30);
 
@@ -179,9 +180,62 @@ const problemDetail = (problem: typeof GiceProblem.Type | undefined, status: num
   return line.length > MAX_PROBLEM_TEXT ? `${line.slice(0, MAX_PROBLEM_TEXT)}…` : line;
 };
 
+const refusalReason = (text: string) => Option.getOrUndefined(decodeProblem(text))?.error.reason;
+
+const SCOPE_NAME = /\b(?:repo|issues|workflows):(?:read|write|admin)\b|\baccount\b|\badmin\b/gu;
+
+/** The scopes a 403 `insufficient_scope` names: its `WWW-Authenticate`, else its message. */
+export function missingScopes(wwwAuthenticate: string | undefined, message: string) {
+  const named = /\bscope="([^"]*)"/u.exec(wwwAuthenticate ?? "")?.[1];
+  if (named !== undefined) return named.split(/\s+/u).filter((scope) => scope !== "");
+  // Gice's workflow-file refusals name the scope only in their text: "...needs a token with the
+  // workflows:write scope".
+  const needs = /\bneeds? a token with the ([a-z:\s,]+?) scopes?\b/u.exec(message)?.[1] ?? "";
+  return [...new Set(needs.match(SCOPE_NAME) ?? [])];
+}
+
+function refusedCredentialHint(
+  credential: GiceCredentials.GiceCredential,
+  reason: string | undefined,
+): string | null {
+  const expired = reason === "token_expired";
+  switch (credential.source) {
+    case "app":
+      return `Gice refused the T3 Code sign-in for ${credential.host}. Sign in again in ${SETTINGS_PATH}.`;
+    case "settings":
+      return expired
+        ? `The token saved in Settings for ${credential.host} has expired. Save a new one, or sign in instead.`
+        : null;
+    case "environment":
+      return expired ? "The token in GICE_TOKEN has expired. Set a new one on the server." : null;
+    case "cli":
+      return expired
+        ? `The gice CLI sign-in for ${credential.host} has expired. Run \`gice auth status\` on the server to renew it, or sign in from ${SETTINGS_PATH}.`
+        : null;
+  }
+}
+
+function missingScopeHint(
+  credential: GiceCredentials.GiceCredential,
+  missing: ReadonlyArray<string>,
+): string {
+  const names = missing.join(" ");
+  switch (credential.source) {
+    case "app":
+      return `The T3 Code sign-in for ${credential.host} lacks ${names}. Sign in again in ${SETTINGS_PATH}; the new sign-in asks for it.`;
+    case "settings":
+      return `The token saved in Settings for ${credential.host} lacks ${names}. Save a token that has it, or sign in instead.`;
+    case "environment":
+      return `The token in GICE_TOKEN lacks ${names}.`;
+    case "cli":
+      return `The gice CLI login for ${credential.host} lacks ${names}. Sign in to the CLI again with it (\`gice auth login --scopes\`), or sign in from ${SETTINGS_PATH}.`;
+  }
+}
+
 const make = Effect.gen(function* () {
   const httpClient = yield* HttpClient.HttpClient;
   const credentials = yield* GiceCredentials.GiceCredentials;
+  const signIns = yield* GiceAppSignIn.GiceAppSignIn;
   const limits = yield* SourceControlRateLimit.SourceControlRateLimit;
 
   const exchange = Effect.fn("GiceApi.request")(function* (input: GiceApiRequest) {
@@ -216,16 +270,22 @@ const make = Effect.gen(function* () {
     const path =
       input.repository === undefined ? input.path : `/repos/${input.repository}${input.path}`;
     // The request goes to the address the credential was issued for, never one built from `host`.
-    const credential = yield* credentials.get(input.host).pipe(
+    const credentialFor = credentials.get(input.host).pipe(
       Effect.mapError((cause) =>
         fail({
           status: null,
-          reason: cause._tag === "GiceNotSignedInError" ? "missing-tool" : "unauthenticated",
+          reason:
+            cause._tag === "GiceNotSignedInError"
+              ? "missing-tool"
+              : cause._tag === "GiceSignInUnreachableError"
+                ? "failed"
+                : "unauthenticated",
           detail: cause.message,
           cause,
         }),
       ),
     );
+    let credential = yield* credentialFor;
     // One pause per server, however the caller spelled its host. PullRequestService pauses a
     // project under its web URL's host, the same one, so a 429 either sees pauses both. While
     // paused, a background read fails at once; a write or a read someone waits on still goes out.
@@ -244,33 +304,53 @@ const make = Effect.gen(function* () {
           }),
         ),
       );
-    const base = HttpClientRequest.make(method)(`${credential.baseUrl}/api/v1${path}`).pipe(
-      HttpClientRequest.bearerToken(Redacted.value(credential.token)),
-      HttpClientRequest.setHeaders({ accept: "application/json", "user-agent": "t3code" }),
-    );
-    const { status, retryAfter, totalCount, text } = yield* Effect.gen(function* () {
-      const response = yield* httpClient
-        .execute(
-          input.body === undefined ? base : base.pipe(HttpClientRequest.bodyJsonUnsafe(input.body)),
-        )
-        .pipe(
-          // Client spans expose query strings containing branch names.
-          Effect.provideService(HttpClient.TracerDisabledWhen, () => true),
-          // fetch would carry the bearer token to any redirect target.
-          Effect.provideService(FetchHttpClient.RequestInit, NO_REDIRECT),
-        );
-      return {
-        status: response.status,
-        retryAfter: response.headers["retry-after"],
-        totalCount: response.headers["x-total-count"],
-        text: yield* response.text,
-      };
-    }).pipe(
-      Effect.timeout(TIMEOUT),
-      Effect.mapError((cause) =>
-        fail({ status: null, reason: "failed", detail: "Could not reach Gice.", cause }),
-      ),
-    );
+    const send = (held: GiceCredentials.GiceCredential) => {
+      const base = HttpClientRequest.make(method)(`${held.baseUrl}/api/v1${path}`).pipe(
+        HttpClientRequest.bearerToken(Redacted.value(held.token)),
+        HttpClientRequest.setHeaders({ accept: "application/json", "user-agent": "t3code" }),
+      );
+      return Effect.gen(function* () {
+        const response = yield* httpClient
+          .execute(
+            input.body === undefined
+              ? base
+              : base.pipe(HttpClientRequest.bodyJsonUnsafe(input.body)),
+          )
+          .pipe(
+            // Client spans expose query strings containing branch names.
+            Effect.provideService(HttpClient.TracerDisabledWhen, () => true),
+            // fetch would carry the bearer token to any redirect target.
+            Effect.provideService(FetchHttpClient.RequestInit, NO_REDIRECT),
+          );
+        return {
+          status: response.status,
+          retryAfter: response.headers["retry-after"],
+          totalCount: response.headers["x-total-count"],
+          wwwAuthenticate: response.headers["www-authenticate"],
+          text: yield* response.text,
+        };
+      }).pipe(
+        Effect.timeout(TIMEOUT),
+        Effect.mapError((cause) =>
+          fail({ status: null, reason: "failed", detail: "Could not reach Gice.", cause }),
+        ),
+      );
+    };
+    let reply = yield* send(credential);
+    // A refusal is reported once per token: renewing it may hand back the same one.
+    let reported: string | null = null;
+    if (reply.status === 401) {
+      yield* credentials.rejected(credential, refusalReason(reply.text));
+      reported = Redacted.value(credential.token);
+      // Gice checks the token before anything else, so a refused request changed nothing and
+      // goes again once with a renewed one.
+      const renewed = yield* credentialFor;
+      if (Redacted.value(renewed.token) !== Redacted.value(credential.token)) {
+        credential = renewed;
+        reply = yield* send(credential);
+      }
+    }
+    const { status, retryAfter, totalCount, text } = reply;
     yield* Effect.annotateCurrentSpan({ "http.response.status_code": status });
     if (status >= 200 && status < 300) {
       yield* limits.recordSuccess({ ...key, lease });
@@ -286,13 +366,26 @@ const make = Effect.gen(function* () {
         ? SourceControlRateLimit.retryAtFromHeader(retryAfter, yield* Clock.currentTimeMillis)
         : undefined;
     if (status === 429) yield* limits.recordRateLimit({ ...key, lease, retryAt });
-    // The login file may hold a newer token than the one that was refused.
-    if (status === 401) yield* credentials.invalidate;
+    if (status === 401 && reported !== Redacted.value(credential.token))
+      yield* credentials.rejected(credential, refusalReason(text));
     const problem = Option.getOrUndefined(decodeProblem(text))?.error;
+    const missing =
+      status === 403 && problem?.reason === "insufficient_scope"
+        ? missingScopes(reply.wwwAuthenticate, problem.message)
+        : [];
+    if (missing.length > 0 && credential.source === "app")
+      yield* signIns.lacks(credential.host, missing);
+    const hint =
+      status === 401
+        ? refusedCredentialHint(credential, problem?.reason)
+        : missing.length > 0
+          ? missingScopeHint(credential, missing)
+          : null;
+    const detail = problemDetail(problem, status);
     return yield* fail({
       status,
       reason: reasonForStatus(status),
-      detail: problemDetail(problem, status),
+      detail: hint === null ? detail : `${detail.replace(/\.?$/u, ".")} ${hint}`,
       retryAt,
       code: problem?.code,
       field: problem?.field,
