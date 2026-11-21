@@ -56,19 +56,30 @@ export type SourceControlCliDiscoverySpec = SourceControlDiscoverySpecBase & {
   ) => SourceControlProviderInfo | null | undefined;
 };
 
+/**
+ * The host a remote no definition claims is on, when it is this one's. Null includes a missing CLI
+ * or credential. Failure means unknown and must not be cached by the registry.
+ */
+export type SourceControlUnknownRemoteRefinement = (input: {
+  readonly cwd: string;
+  readonly context: SourceControlProvider.SourceControlProviderContext;
+}) => Effect.Effect<SourceControlProviderInfo | null, Cause.YieldableError>;
+
 export type SourceControlApiDiscoverySpec = SourceControlDiscoverySpecBase & {
   readonly type: "api";
-  readonly probeAuth: Effect.Effect<SourceControlProviderAuth, never>;
+  /** `version` is the server's, for a host that reports one. */
+  readonly probeAuth: Effect.Effect<
+    SourceControlProviderAuth & { readonly version?: string | undefined },
+    never
+  >;
+  /** For a host that serves any hostname, so a remote's name cannot say it is this host's. */
+  readonly refineUnknownRemote?: SourceControlUnknownRemoteRefinement;
 };
 
 export type SourceControlManagedCliDiscoverySpec = SourceControlDiscoverySpecBase & {
   readonly type: "managed-cli";
   readonly probe: (cwd: string) => Effect.Effect<SourceControlProviderDiscoveryItem>;
-  /** Null includes missing CLIs. Failure means unknown and must not be cached by the registry. */
-  readonly refineUnknownRemote: (input: {
-    readonly cwd: string;
-    readonly context: SourceControlProvider.SourceControlProviderContext;
-  }) => Effect.Effect<SourceControlProviderInfo | null, Cause.YieldableError>;
+  readonly refineUnknownRemote: SourceControlUnknownRemoteRefinement;
 };
 
 export type SourceControlProviderDiscoverySpec =
@@ -251,17 +262,18 @@ export function probeSourceControlProvider(input: {
     return input.spec.probeAuth.pipe(
       Effect.timeoutOption(API_PROBE_TIMEOUT),
       Effect.map(
-        Option.getOrElse(() =>
-          unknownAuth("The hosting service did not answer in time. Refresh to try again."),
+        Option.getOrElse(
+          (): SourceControlProviderAuth & { readonly version?: string | undefined } =>
+            unknownAuth("The hosting service did not answer in time. Refresh to try again."),
         ),
       ),
       Effect.map(
-        (auth) =>
+        ({ version, ...auth }) =>
           ({
             kind: input.spec.kind,
             label: input.spec.label,
             status: "available" as const,
-            version: Option.none<string>(),
+            version: Option.fromUndefinedOr(version),
             installHint: input.spec.installHint,
             detail: Option.none<string>(),
             auth,
@@ -408,8 +420,8 @@ function refineWithSpec(input: {
   readonly context: SourceControlProvider.SourceControlProviderContext;
 }): Effect.Effect<SourceControlProviderInfo | null, Cause.YieldableError> {
   const { spec, context } = input;
-  if (spec.type === "managed-cli") {
-    return spec.refineUnknownRemote({ cwd: input.cwd, context });
+  if (spec.type === "managed-cli" || spec.type === "api") {
+    return spec.refineUnknownRemote?.({ cwd: input.cwd, context }) ?? Effect.succeed(null);
   }
   if (!isCliRemoteRefinementSpec(spec)) return Effect.succeed(null);
   return input.process

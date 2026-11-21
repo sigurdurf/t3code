@@ -188,6 +188,40 @@ it.effect("routes an unknown remote to the integration that claims its server", 
   }),
 );
 
+it.effect("routes an unknown remote to an API host that claims its server", () =>
+  Effect.gen(function* () {
+    const registry = yield* makeRegistry({
+      remotes: [{ name: "origin", url: "git@code.example.test:team/project.git" }],
+      discovery: [
+        {
+          type: "api",
+          kind: kind("forgejo"),
+          label: "Forgejo",
+          installHint: "unused",
+          probeAuth: Effect.succeed({
+            status: "authenticated",
+            account: Option.some("alice"),
+            host: Option.some("code.example.test"),
+            detail: Option.none(),
+            version: "1.2.3",
+          }),
+          refineUnknownRemote: ({ context }) =>
+            Effect.succeed({
+              kind: kind("forgejo"),
+              name: "Forgejo",
+              baseUrl: context.provider.baseUrl,
+            }),
+        },
+      ],
+    });
+
+    assert.strictEqual((yield* registry.resolveHandle({ cwd: "/repo" })).provider.kind, "forgejo");
+    const item = (yield* registry.discover).find((entry) => entry.kind === "forgejo");
+    assert.deepStrictEqual(item?.version, Option.some("1.2.3"));
+    assert.notProperty(item?.auth, "version");
+  }),
+);
+
 it.effect("leaves a remote no integration claims unknown, with its server's address", () =>
   Effect.gen(function* () {
     const registry = yield* makeRegistry({
