@@ -549,7 +549,12 @@ export interface PullRequestProviderApi {
   readonly setFilesViewed?: (
     input: ProviderRepositoryRef & {
       readonly number: number;
-      readonly files: ReadonlyArray<{ readonly path: string; readonly viewed: boolean }>;
+      readonly files: ReadonlyArray<{
+        readonly path: string;
+        readonly viewed: boolean;
+        /** The file's version in the diff the reader was shown, as the diff names it. */
+        readonly revision?: string | undefined;
+      }>;
     },
   ) => Effect.Effect<void, PullRequestProviderError>;
 
