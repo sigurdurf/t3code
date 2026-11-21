@@ -74,6 +74,8 @@ export type SourceControlApiDiscoverySpec = SourceControlDiscoverySpecBase & {
   >;
   /** For a host that serves any hostname, so a remote's name cannot say it is this host's. */
   readonly refineUnknownRemote?: SourceControlUnknownRemoteRefinement;
+  /** Clients offer the driver's app sign-in. */
+  readonly appSignIn?: boolean;
 };
 
 export type SourceControlManagedCliDiscoverySpec = SourceControlDiscoverySpecBase & {
@@ -259,6 +261,7 @@ export function probeSourceControlProvider(input: {
 }): Effect.Effect<SourceControlProviderDiscoveryItem> {
   if (input.spec.type === "managed-cli") return input.spec.probe(input.cwd);
   if (input.spec.type === "api") {
+    const appSignIn = input.spec.appSignIn === true;
     return input.spec.probeAuth.pipe(
       Effect.timeoutOption(API_PROBE_TIMEOUT),
       Effect.map(
@@ -277,6 +280,7 @@ export function probeSourceControlProvider(input: {
             installHint: input.spec.installHint,
             detail: Option.none<string>(),
             auth,
+            ...(appSignIn ? { appSignIn: true } : {}),
           }) satisfies SourceControlProviderDiscoveryItem,
       ),
     );

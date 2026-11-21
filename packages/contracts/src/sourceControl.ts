@@ -194,7 +194,11 @@ export type SourceControlSignInInput = typeof SourceControlSignInInput.Type;
 export const SourceControlSignInPrompt = Schema.Struct({
   userCode: TrimmedNonEmptyString,
   verificationUri: TrimmedNonEmptyString,
+  /** `verificationUri` with the code filled in, for a host that gives one; the user still checks it. */
+  verificationUriComplete: Schema.optionalKey(TrimmedNonEmptyString),
   expiresAt: Schema.Number,
+  /** What the sign-in asks the host to allow, in the host's own names, for a host that has them. */
+  scopes: Schema.optionalKey(Schema.Array(TrimmedNonEmptyString)),
 });
 export type SourceControlSignInPrompt = typeof SourceControlSignInPrompt.Type;
 
