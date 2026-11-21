@@ -7003,6 +7003,7 @@
   "d4bfcdc6bb7676a3": "{count, plural, other {合并 {count} 个 {term, select, mr {merge request} cr {change request} other {pull request}}？}}",
   "b9f2a24a3757f6c9": "{count, plural, other {变基 {count} 个 {term, select, mr {merge request} cr {change request} other {pull request}}？}}",
   "d1bcf19eb2753fff": "使用 {method} 将 #{number} 及其下方未合并的各层合并到 {base}。{host} 会在合并或排队前检查它们的规则，并在合并后对剩余堆叠执行变基。",
+  "313aa73c12a8be38": "使用 {method} 将 #{number} 及其下方未合并的各层合并到 {base}。{host} 会在合并前检查它们的规则。",
   "31d2f22f5a282719": "将远端分支自下而上变基到 {base}。这会重写分支历史，并可能重新运行检查。如果某一层失败，之前的更新会保留。",
   "a0adf78733c368ae": "合并堆叠",
   "140dc384c58b74f3": "对堆叠变基",

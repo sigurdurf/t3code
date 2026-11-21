@@ -1606,6 +1606,11 @@ export function PullRequestDetailPanel({
                   stale={!nativeStackQuery.isFresh}
                   canMerge={supportsStackActions && can("merge") && allowedMergeMethods.length > 0}
                   canRebase={supportsStackActions && detail.viewerPermissions.stackRebase === true}
+                  mergeRebasesAbove={
+                    // Servers from before `stackMergeRebasesAbove` knew GitHub as the one host
+                    // that does. Drop the fallback once clients stop supporting such servers.
+                    detail.capabilities.stackMergeRebasesAbove ?? detail.provider === "github"
+                  }
                   onActed={() => {
                     refreshDetail();
                     onActed?.();

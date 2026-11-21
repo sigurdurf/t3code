@@ -6996,6 +6996,7 @@
   "d4bfcdc6bb7676a3": "{count, plural, one {Merge {count} {term, select, mr {merge request} cr {change request} other {pull request}}?} other {Merge {count} {term, select, mr {merge requests} cr {change requests} other {pull requests}}?}}",
   "b9f2a24a3757f6c9": "{count, plural, one {Rebase {count} {term, select, mr {merge request} cr {change request} other {pull request}}?} other {Rebase {count} {term, select, mr {merge requests} cr {change requests} other {pull requests}}?}}",
   "d1bcf19eb2753fff": "Merge #{number} and its unmerged layers below into {base} using {method}. {host} checks their rules before merging or queueing them and rebases the remaining stack after merging.",
+  "313aa73c12a8be38": "Merge #{number} and its unmerged layers below into {base} using {method}. {host} checks their rules before merging them.",
   "31d2f22f5a282719": "Rebase the remote branches from bottom to top onto {base}. This rewrites branch history and may restart checks. If a layer fails, earlier updates remain.",
   "a0adf78733c368ae": "Merge stack",
   "140dc384c58b74f3": "Rebase stack",

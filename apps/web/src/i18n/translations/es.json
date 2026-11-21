@@ -6989,6 +6989,7 @@
   "d4bfcdc6bb7676a3": "{count, plural, one {¿Fusionar {count} {term, select, mr {merge request} cr {solicitud de cambios} other {pull request}}?} other {¿Fusionar {count} {term, select, mr {merge requests} cr {solicitudes de cambios} other {pull requests}}?}}",
   "b9f2a24a3757f6c9": "{count, plural, one {¿Hacer rebase de {count} {term, select, mr {merge request} cr {solicitud de cambios} other {pull request}}?} other {¿Hacer rebase de {count} {term, select, mr {merge requests} cr {solicitudes de cambios} other {pull requests}}?}}",
   "d1bcf19eb2753fff": "Fusiona #{number} y sus capas sin fusionar de debajo en {base} mediante {method}. {host} comprueba sus reglas antes de fusionarlas o ponerlas en cola, y hace rebase del resto de la pila después de fusionar.",
+  "313aa73c12a8be38": "Fusiona #{number} y sus capas sin fusionar de debajo en {base} mediante {method}. {host} comprueba sus reglas antes de fusionarlas.",
   "31d2f22f5a282719": "Hace rebase de las ramas remotas de abajo arriba sobre {base}. Esto reescribe el historial de las ramas y puede reiniciar las comprobaciones. Si una capa falla, las actualizaciones anteriores se mantienen.",
   "a0adf78733c368ae": "Fusionar pila",
   "140dc384c58b74f3": "Hacer rebase de la pila",

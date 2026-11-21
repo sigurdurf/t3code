@@ -6995,6 +6995,7 @@
   "d4bfcdc6bb7676a3": "{count, plural, one {Merga {count} {term, select, mr {merge request} cr {ändringsbegäran} other {pull request}}?} other {Merga {count} {term, select, mr {merge requests} cr {ändringsbegäranden} other {pull requests}}?}}",
   "b9f2a24a3757f6c9": "{count, plural, one {Rebasa {count} {term, select, mr {merge request} cr {ändringsbegäran} other {pull request}}?} other {Rebasa {count} {term, select, mr {merge requests} cr {ändringsbegäranden} other {pull requests}}?}}",
   "d1bcf19eb2753fff": "Merga #{number} och dess omergade lager under in i {base} med {method}. {host} kontrollerar sina regler innan de mergas eller köas och rebasar resten av stacken efter mergen.",
+  "313aa73c12a8be38": "Merga #{number} och dess omergade lager under in i {base} med {method}. {host} kontrollerar sina regler innan de mergas.",
   "31d2f22f5a282719": "Rebasa fjärrgrenarna nerifrån och upp på {base}. Det här skriver om grenhistoriken och kan starta om kontroller. Om ett lager misslyckas finns tidigare uppdateringar kvar.",
   "a0adf78733c368ae": "Merga stacken",
   "140dc384c58b74f3": "Rebasa stacken",

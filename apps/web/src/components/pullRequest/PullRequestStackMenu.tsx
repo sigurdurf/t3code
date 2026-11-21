@@ -43,6 +43,7 @@ export function PullRequestStackMenu({
   stale,
   canMerge,
   canRebase,
+  mergeRebasesAbove,
   mergeMethod,
   onSelect,
   onActed,
@@ -59,6 +60,7 @@ export function PullRequestStackMenu({
   stale: boolean;
   canMerge: boolean;
   canRebase: boolean;
+  mergeRebasesAbove: boolean;
   mergeMethod: PullRequestMergeMethod;
   onSelect?: ((reference: PullRequestRef) => void) | undefined;
   onActed: () => void;
@@ -301,15 +303,25 @@ export function PullRequestStackMenu({
             </DialogTitle>
             <DialogDescription>
               {confirmation === "merge"
-                ? gt(
-                    "Merge #{number} and its unmerged layers below into {base} using {method}. {host} checks their rules before merging or queueing them and rebases the remaining stack after merging.",
-                    {
-                      number: reference.number,
-                      base: stack.base,
-                      method: mergeMethod,
-                      host: hostLabel,
-                    },
-                  )
+                ? mergeRebasesAbove
+                  ? gt(
+                      "Merge #{number} and its unmerged layers below into {base} using {method}. {host} checks their rules before merging or queueing them and rebases the remaining stack after merging.",
+                      {
+                        number: reference.number,
+                        base: stack.base,
+                        method: mergeMethod,
+                        host: hostLabel,
+                      },
+                    )
+                  : gt(
+                      "Merge #{number} and its unmerged layers below into {base} using {method}. {host} checks their rules before merging them.",
+                      {
+                        number: reference.number,
+                        base: stack.base,
+                        method: mergeMethod,
+                        host: hostLabel,
+                      },
+                    )
                 : gt(
                     "Rebase the remote branches from bottom to top onto {base}. This rewrites branch history and may restart checks. If a layer fails, earlier updates remain.",
                     { base: stack.base },
