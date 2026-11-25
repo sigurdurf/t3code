@@ -850,7 +850,7 @@ function PullRequestCodeTab({
 
   const imageRevision = commit ?? detail.headSha;
   const rawFileUrl = sourceControlClients.find(detail.provider)?.rawFileUrl;
-  const repositoryUrl = sourceControlClients.parseChangeRequestUrl(detail.url)?.link.repositoryUrl;
+  const repositoryUrl = sourceControlClients.parseChangeRequestLink(detail.url)?.repositoryUrl;
   // Hosts send no patch for an image, so its expanded row shows the file at this revision.
   const imagePreviewUrl = (fileDiff: FileDiffMetadata, path: string) =>
     fileDiff.hunks.length === 0 &&

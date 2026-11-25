@@ -1157,10 +1157,7 @@ export function createThreadOutboxDelivery(): {
       if (!AsyncResult.isSuccess(checkout)) return yield* retryDelivery;
       if (!checkout.value.worktreePath || !checkout.value.isOnPullRequestHead) {
         const term = changeRequestTermKind(
-          (
-            sourceControlClients.findByChangeRequestUrl(creation.pullRequestReference) ??
-            sourceControlClients.get(undefined)
-          ).changeRequest,
+          sourceControlClients.changeRequestTerminology(creation.pullRequestReference),
         );
         return yield* restoreQueuedMessage(
           persistedMessage,

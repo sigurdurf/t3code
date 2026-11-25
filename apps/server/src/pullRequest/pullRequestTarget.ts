@@ -91,8 +91,8 @@ export const resolveTarget = Effect.fn("PullRequestsToolkit.resolveTarget")(func
   project: OrchestrationProjectShell | undefined,
 ) {
   if (input.url !== undefined) {
-    const parsed = sourceControlDefinitions.parseChangeRequestUrl(input.url)?.link;
-    if (parsed === undefined) {
+    const parsed = sourceControlDefinitions.parseChangeRequestLink(input.url);
+    if (parsed === null) {
       return yield* new PullRequestUrlInvalidError({});
     }
     return {
@@ -123,12 +123,14 @@ export const resolveTarget = Effect.fn("PullRequestsToolkit.resolveTarget")(func
     return yield* new PullRequestHostRequiredError({});
   }
   const repository = (own?.repository ?? input.repository).toLowerCase();
-  // Without a URL, a public forge host says what shape its change request URLs take;
-  // any other host is taken to run the project's own forge.
+  // Without a URL, a public forge host or a host whose name fixes its URLs says what shape its
+  // change request URLs take; any other host is taken to run the project's own forge.
   const recognizedKind = sourceControlDefinitions.recognizeRemote(`https://${host}`)?.kind;
+  const named =
+    recognizedKind === undefined ? undefined : sourceControlDefinitions.find(recognizedKind);
   const kind =
     sourceControlDefinitions.findByPublicHost(host)?.kind ??
-    (recognizedKind === "gitcafe" ? recognizedKind : projectHost.kind);
+    (named?.recognizedNameFixesUrls === true ? named.kind : projectHost.kind);
   const definition = kind === null ? null : sourceControlDefinitions.get(kind);
   const url =
     definition?.changeRequestUrl({

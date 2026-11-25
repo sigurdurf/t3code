@@ -1,4 +1,9 @@
-import { EnvironmentId, ProjectId, type ServerConfig } from "@t3tools/contracts";
+import {
+  EnvironmentId,
+  ProjectId,
+  SourceControlProviderKind,
+  type ServerConfig,
+} from "@t3tools/contracts";
 import { Atom, AtomRegistry } from "effect/reactivity";
 import * as Option from "effect/Option";
 import { describe, expect, it } from "vite-plus/test";
@@ -116,6 +121,77 @@ describe("project scratch identity", () => {
 
       registry.set(configAtom(environmentId), null);
       expect(registry.get(projects.projectsAtom).every((project) => !project.isScratch)).toBe(true);
+    } finally {
+      registry.dispose();
+    }
+  });
+});
+
+describe("environment change request hosts", () => {
+  it("keeps one host map while the projects' servers stay the same", () => {
+    const { registry, projects, snapshotAtom } = makeHarness();
+    const onServer = (title: string, provider: string) => ({
+      ...v2Project,
+      title,
+      repositoryIdentity: {
+        canonicalKey: "git.example.com/team/repo",
+        locator: {
+          source: "git-remote" as const,
+          remoteName: "origin",
+          remoteUrl: "git@git.example.com:team/repo.git",
+        },
+        provider: SourceControlProviderKind.make(provider),
+      },
+    });
+    const setProjects = (next: Array<ReturnType<typeof onServer>>) =>
+      registry.set(snapshotAtom(environmentId), {
+        ...registry.get(snapshotAtom(environmentId)),
+        projects: next,
+      });
+    try {
+      setProjects([onServer("Repo", "gice")]);
+      const hosts = registry.get(projects.changeRequestHostsAtom(environmentId));
+      expect([...hosts]).toEqual([["git.example.com", "gice"]]);
+      setProjects([onServer("Renamed", "gice")]);
+      expect(registry.get(projects.changeRequestHostsAtom(environmentId))).toBe(hosts);
+      setProjects([onServer("Renamed", "gice"), onServer("Other", "forgejo")]);
+      expect([...registry.get(projects.changeRequestHostsAtom(environmentId))]).toEqual([
+        ["git.example.com", null],
+      ]);
+      expect(registry.get(projects.changeRequestHostsAtom(null)).size).toBe(0);
+    } finally {
+      registry.dispose();
+    }
+  });
+
+  it("includes tracked repository identities of multi-repository projects", () => {
+    const { registry, projects, snapshotAtom } = makeHarness();
+    try {
+      registry.set(snapshotAtom(environmentId), {
+        ...registry.get(snapshotAtom(environmentId)),
+        projects: [
+          {
+            ...v2Project,
+            title: "Workspace",
+            repositoryIdentity: null,
+            trackedFolders: [{ path: "/workspace/api", name: "api", discovered: true }],
+            trackedRepositoryIdentities: [
+              {
+                canonicalKey: "code.example.com/team/api",
+                locator: {
+                  source: "git-remote",
+                  remoteName: "origin",
+                  remoteUrl: "git@code.example.com:team/api.git",
+                },
+                provider: SourceControlProviderKind.make("gice"),
+              },
+            ],
+          },
+        ],
+      });
+      expect([...registry.get(projects.changeRequestHostsAtom(environmentId))]).toEqual([
+        ["code.example.com", "gice"],
+      ]);
     } finally {
       registry.dispose();
     }

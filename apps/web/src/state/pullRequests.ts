@@ -1,5 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import { changeRequestLinkHost } from "@t3tools/client-runtime/change-request-links";
+import type { ChangeRequestHosts } from "@t3tools/client-runtime/source-control-clients";
 import {
   applyPullRequestSummaryEdits,
   createLinkedPullRequestSummaryAtomFamily,
@@ -47,6 +48,7 @@ import { writePullRequestDetailSnapshot } from "../components/pullRequest/pullRe
 import { pullRequestChecksState } from "../components/pullRequest/pullRequestPresentation";
 import { useGuideRunStore } from "../components/pullRequest/guide/guideRunStore";
 import { formatEnvironmentQueryError } from "./query";
+import { environmentProjects } from "./projects";
 import { environmentThreadShells } from "./threads";
 
 export interface ObservedPullRequestSummary {
@@ -510,17 +512,17 @@ export const linkedPullRequestDetailAtom = createLinkedPullRequestSummaryAtomFam
     ),
 );
 
+/** `hosts` are the link's environment's. */
 export function threadPullRequestLinkToSummary(
   link: ThreadPullRequestLink,
   projectId: ProjectId,
+  hosts: ChangeRequestHosts,
 ): PullRequestSummary | null {
   const updatedAt = link.snapshot?.updatedAt;
   if (link.snapshot === null || updatedAt == null) return null;
   return {
     ...link.snapshot,
-    provider: (
-      sourceControlClients.findByChangeRequestUrl(link.url) ?? sourceControlClients.get(undefined)
-    ).kind,
+    provider: changeRequestLinkHost(link.url, hosts).kind,
     projectId,
     repository: link.repository,
     number: link.number,
@@ -541,8 +543,9 @@ function savedPullRequestKey(
 const savedPullRequestSummariesAtom = Atom.make((get) => {
   const summaries = new Map<string, PullRequestSummary>();
   for (const thread of get(environmentThreadShells.threadShellsAtom)) {
+    const hosts = get(environmentProjects.changeRequestHostsAtom(thread.environmentId));
     for (const link of visibleThreadPullRequests(thread.pullRequests)) {
-      const summary = threadPullRequestLinkToSummary(link, thread.projectId);
+      const summary = threadPullRequestLinkToSummary(link, thread.projectId, hosts);
       if (summary === null) continue;
       const key = savedPullRequestKey(thread.environmentId, link);
       summaries.set(key, newestPullRequestSummary(summaries.get(key) ?? null, summary) ?? summary);

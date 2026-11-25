@@ -35,6 +35,7 @@ import type * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 
 import type * as OrchestrationEventStore from "../persistence/OrchestrationEventStore.ts";
+import * as ProjectEnrichmentService from "../project/ProjectEnrichmentService.ts";
 import { bufferLatestLiveStream } from "./LiveStreamBudget.ts";
 import type { ActiveShellIndexEntry } from "./ProjectionStore.ts";
 
@@ -109,11 +110,19 @@ export const loadShellUnlessResumable = Effect.fnUntraced(function* <A, E, R>(in
  * its HTTP snapshot had, and a resume that computes the same one skips its marked snapshot.
  */
 export function projectIdentitiesDigest(
-  projects: ReadonlyArray<Pick<OrchestrationProjectShell, "id" | "repositoryIdentity">>,
+  projects: ReadonlyArray<
+    Pick<OrchestrationProjectShell, "id" | "repositoryIdentity" | "trackedRepositoryIdentities">
+  >,
 ): string {
   const hash = NodeCrypto.createHash("sha256");
   for (const project of projects) {
-    hash.update(JSON.stringify([project.id, project.repositoryIdentity ?? null]));
+    hash.update(
+      JSON.stringify(
+        project.trackedRepositoryIdentities && project.trackedRepositoryIdentities.length > 0
+          ? [project.id, project.repositoryIdentity ?? null, project.trackedRepositoryIdentities]
+          : [project.id, project.repositoryIdentity ?? null],
+      ),
+    );
   }
   return hash.digest("base64url");
 }
@@ -690,6 +699,16 @@ export function dedupeShellEnrichment<E, R>(
   });
 }
 
+function projectsWithResolvedRoot(
+  projects: OrchestrationV2ShellSnapshot["projects"],
+  resolvedRoots: ReadonlyArray<string>,
+): OrchestrationV2ShellSnapshot["projects"] {
+  const resolved = new Set(resolvedRoots);
+  return projects.filter((project) =>
+    ProjectEnrichmentService.projectRepositoryRoots(project).some((root) => resolved.has(root)),
+  );
+}
+
 export function shellStreamItemFromEnrichmentRefresh(input: {
   readonly snapshot: OrchestrationV2ShellSnapshot;
   readonly changes: ReadonlyArray<{ readonly workspaceRoot: string }>;
@@ -701,9 +720,7 @@ export function shellStreamItemFromEnrichmentRefresh(input: {
     kind: "snapshot",
     snapshot: {
       ...input.snapshot,
-      projects: input.snapshot.projects.filter((project) =>
-        resolvedRepositoryIdentityRoots.includes(project.workspaceRoot),
-      ),
+      projects: projectsWithResolvedRoot(input.snapshot.projects, resolvedRepositoryIdentityRoots),
       threads: [],
       archivedThreads: [],
     },
@@ -728,8 +745,9 @@ export function shellStreamItemsFromInitialSnapshot(input: {
       kind: "snapshot" as const,
       snapshot: {
         ...input.snapshot,
-        projects: input.snapshot.projects.filter((project) =>
-          input.resolvedRepositoryIdentityRoots.includes(project.workspaceRoot),
+        projects: projectsWithResolvedRoot(
+          input.snapshot.projects,
+          input.resolvedRepositoryIdentityRoots,
         ),
         threads: [],
         archivedThreads: [],

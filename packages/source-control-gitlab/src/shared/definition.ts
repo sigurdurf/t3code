@@ -76,6 +76,7 @@ export const definition = defineSourceControl({
   changeRequestCloseCommand: /\bglab\s+mr\s+(?:merge|accept|close)\b/u,
   // `new` is glab's alias for `create`.
   changeRequestCreateCommand: /\bglab\s+mr\s+(?:create|new)\b/u,
+  changeRequestListCommand: /\bglab\s+(?:mr\s+list|api)\b/u,
   // Bot users, unlike GitHub's, have real profile pages.
   authorProfileUrl: (login, repositoryUrl) =>
     new URL(`/${encodeURIComponent(login)}`, repositoryUrl).toString(),

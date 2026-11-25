@@ -23,6 +23,7 @@ import {
   dedupeShellEnrichment,
   omitIdleSubagentShells,
   omitOlderSettledShells,
+  projectIdentitiesDigest,
   shellStreamItemFromEnrichmentRefresh,
   shellStreamItemsFromInitialSnapshot,
   shouldPublishShellApplicationEvent,
@@ -510,6 +511,38 @@ describe("composeShellStreamWithEnrichment", () => {
         }
       }),
   );
+});
+
+describe("tracked repository identities", () => {
+  const identity = (key: string) => ({
+    canonicalKey: `git.example.com/${key}`,
+    locator: {
+      source: "git-remote" as const,
+      remoteName: "origin",
+      remoteUrl: `https://git.example.com/${key}.git`,
+    },
+  });
+  const project = {
+    id: ProjectId.make("project-a"),
+    title: "A project",
+    workspaceRoot: "/workspace/a",
+    repositoryIdentity: identity("a"),
+    defaultModelSelection: null,
+    scripts: [],
+    trackedFolders: [{ path: "/workspace/a/api", name: "api", discovered: true }],
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  } as unknown as OrchestrationV2ShellSnapshot["projects"][number];
+
+  it("leaves the resume digest of a project without them as before", () => {
+    const { trackedFolders: _folders, ...single } = project;
+    expect(projectIdentitiesDigest([{ ...single, trackedRepositoryIdentities: [] }])).toBe(
+      projectIdentitiesDigest([single]),
+    );
+    expect(
+      projectIdentitiesDigest([{ ...project, trackedRepositoryIdentities: [identity("api")] }]),
+    ).not.toBe(projectIdentitiesDigest([project]));
+  });
 });
 
 describe("dedupeShellEnrichment", () => {

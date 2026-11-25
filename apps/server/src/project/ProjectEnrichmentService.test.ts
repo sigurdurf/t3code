@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import type { RepositoryIdentity } from "@t3tools/contracts";
+import { OrchestrationProjectShell, type RepositoryIdentity } from "@t3tools/contracts";
 import * as Deferred from "effect/Deferred";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -7,6 +7,7 @@ import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as PubSub from "effect/PubSub";
 import * as Ref from "effect/Ref";
+import * as Schema from "effect/Schema";
 import * as TestClock from "effect/testing/TestClock";
 
 import * as ProjectEnrichment from "./ProjectEnrichmentService.ts";
@@ -75,6 +76,13 @@ it.effect("publishes repository completion while favicon enrichment is still pen
       assert.isTrue(change.repositoryIdentityResolved);
       assert.equal(change.enrichment.repositoryIdentity?.canonicalKey, "example.test/v1/completed");
       assert.isNull(change.enrichment.faviconPath);
+
+      // A tracked folder asks for its identity alone, and that still queues the lookup.
+      const unknown = yield* service.getAvailableRepositoryIdentity("/tracked");
+      assert.isFalse(unknown.repositoryIdentityResolved);
+      const tracked = yield* PubSub.take(changes);
+      assert.equal(tracked.workspaceRoot, "/tracked");
+      assert.equal(tracked.enrichment.repositoryIdentity?.canonicalKey, "example.test/v1/tracked");
     }).pipe(Effect.provide(layer(layerMetadata)));
   }),
 );
@@ -387,4 +395,76 @@ it.effect("keeps a lookup's identity when another root is invalidated mid-flight
       assert.equal(expired.repositoryIdentity?.canonicalKey, "example.test/v1/widgets");
     }).pipe(Effect.provide(layer(layerMetadata)));
   }),
+);
+
+const PROJECT = Schema.decodeSync(OrchestrationProjectShell)({
+  id: "project-1",
+  title: "Workspace",
+  workspaceRoot: "/workspace",
+  repositoryIdentity: null,
+  defaultModelSelection: null,
+  scripts: [],
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+});
+
+it.effect(
+  "enriches a project shell with its root's and its tracked folders' available identities",
+  () =>
+    Effect.gen(function* () {
+      const available: Record<string, ProjectEnrichment.ProjectEnrichment> = {
+        "/workspace": {
+          repositoryIdentity: null,
+          faviconPath: null,
+          repositoryIdentityResolved: true,
+        },
+        "/workspace/api": {
+          repositoryIdentity: identity("/workspace/api"),
+          faviconPath: null,
+          repositoryIdentityResolved: true,
+        },
+        // Last known, not yet resolved again.
+        "/workspace/docs": {
+          repositoryIdentity: identity("/workspace/docs"),
+          faviconPath: null,
+          repositoryIdentityResolved: false,
+        },
+      };
+      const availableFor = (workspaceRoot: string) =>
+        Effect.succeed(
+          available[workspaceRoot] ?? {
+            repositoryIdentity: null,
+            faviconPath: null,
+            repositoryIdentityResolved: false,
+          },
+        );
+      // Only the root's favicon is shown, so only the root may queue a favicon lookup.
+      const withFavicon: Array<string> = [];
+      const service = {
+        getAvailable: (workspaceRoot: string) =>
+          Effect.sync(() => withFavicon.push(workspaceRoot)).pipe(
+            Effect.andThen(availableFor(workspaceRoot)),
+          ),
+        getAvailableRepositoryIdentity: availableFor,
+      };
+
+      const tracking = yield* ProjectEnrichment.enrichProjectShell(service, {
+        ...PROJECT,
+        trackedFolders: [
+          { path: "/workspace/api", name: "api", discovered: true },
+          { path: "/workspace/docs", name: "docs", discovered: true },
+        ],
+      });
+      assert.deepStrictEqual(tracking.project.trackedRepositoryIdentities, [
+        identity("/workspace/api"),
+        identity("/workspace/docs"),
+      ]);
+      assert.deepStrictEqual(tracking.resolvedRoots, ["/workspace", "/workspace/api"]);
+      assert.deepStrictEqual(withFavicon, ["/workspace"]);
+
+      // A project with no tracked repositories sends no list, as an older server does.
+      const single = yield* ProjectEnrichment.enrichProjectShell(service, PROJECT);
+      assert.isFalse("trackedRepositoryIdentities" in single.project);
+      assert.deepStrictEqual(single.resolvedRoots, ["/workspace"]);
+    }),
 );

@@ -7,7 +7,24 @@ import { SourceControlProviderError } from "@t3tools/contracts";
 import { resolveThreadTitleLinks } from "./ThreadTitleLinks.ts";
 import * as SourceControlProviderRegistry from "../sourceControl/SourceControlProviderRegistry.ts";
 
-const layerRegistry = Layer.mock(SourceControlProviderRegistry.SourceControlProviderRegistry);
+const layerRegistry = (
+  service: Pick<
+    SourceControlProviderRegistry.SourceControlProviderRegistry["Service"],
+    "resolveLink"
+  >,
+) =>
+  Layer.mock(SourceControlProviderRegistry.SourceControlProviderRegistry)({
+    ...service,
+    resolveHandle: ({ cwd }) =>
+      Effect.fail(
+        new SourceControlProviderError({
+          provider: SourceControlProviderKind.make("unknown"),
+          operation: "detectProvider",
+          cwd,
+          detail: "Not a repository.",
+        }),
+      ),
+  });
 const encodeSubject = Schema.encodeSync(
   Schema.fromJsonString(Schema.Struct({ title: Schema.String, body: Schema.String })),
 );
@@ -68,4 +85,42 @@ it.effect("keeps lookup failure out of generation and skips unlinked messages", 
       }),
     ),
   ),
+);
+
+it.effect("reads the checkout's host only for a link on a server whose name says nothing", () =>
+  Effect.gen(function* () {
+    const handles: string[] = [];
+    const contexts: Array<[string, boolean]> = [];
+    yield* resolveThreadTitleLinks({
+      cwd: "/tmp/project",
+      message: "https://github.com/acme/web/pull/1 https://git.example.com/acme/web/pulls/2",
+    }).pipe(
+      Effect.provide(
+        Layer.mock(SourceControlProviderRegistry.SourceControlProviderRegistry)({
+          resolveLink: ({ url, context }) => {
+            contexts.push([url.host, context !== undefined]);
+            return undefined;
+          },
+          resolveHandle: ({ cwd }) =>
+            Effect.sync(() => handles.push(cwd)).pipe(
+              Effect.andThen(
+                Effect.fail(
+                  new SourceControlProviderError({
+                    provider: SourceControlProviderKind.make("unknown"),
+                    operation: "detectProvider",
+                    cwd,
+                    detail: "Not a repository.",
+                  }),
+                ),
+              ),
+            ),
+        }),
+      ),
+    );
+    expect(handles).toEqual(["/tmp/project"]);
+    expect(contexts).toEqual([
+      ["github.com", false],
+      ["git.example.com", true],
+    ]);
+  }),
 );

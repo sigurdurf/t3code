@@ -40,7 +40,7 @@ export async function suggestAppAccessForRemote(
       { text: m(msg("Not now")), style: "cancel" },
       {
         text: m(msg("Install", { $context: "verb, installs the GitHub app" })),
-        onPress: () => void tryOpenExternalUrl(target.appSignIn.installUrl, "provider-auth"),
+        onPress: () => void tryOpenExternalUrl(target.installUrl, "provider-auth"),
       },
     ],
   );

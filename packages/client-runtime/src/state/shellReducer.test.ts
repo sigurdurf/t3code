@@ -86,6 +86,99 @@ describe("applyShellStreamEvent", () => {
     expect(moved.projects[0]?.repositoryIdentity).toBeNull();
   });
 
+  describe("tracked repository identities", () => {
+    const api = { path: "/workspace/api", name: "api", discovered: true };
+    const docs = { path: "/workspace/docs", name: "docs", discovered: true };
+    const tracking = applyShellStreamEvent(v2ShellSnapshot, {
+      kind: "project.updated",
+      sequence: 1,
+      project: {
+        ...v2Project,
+        trackedFolders: [api, docs],
+        trackedRepositoryIdentities: [otherIdentity],
+      },
+    });
+
+    it.each([
+      ["still tracks the same folders", [api, docs], [otherIdentity]],
+      ["stopped tracking one of its folders", [api], undefined],
+      ["tracks no folders now", [], undefined],
+      ["no longer sends tracked folders", undefined, undefined],
+    ] as const)(
+      "on an update without them, a project that %s keeps %j",
+      (_name, trackedFolders, kept) => {
+        const next = applyShellStreamEvent(tracking, {
+          kind: "project.updated",
+          sequence: 2,
+          project: {
+            ...v2Project,
+            title: "Updated",
+            ...(trackedFolders === undefined ? {} : { trackedFolders }),
+          },
+        });
+        expect(next.projects[0]?.title).toBe("Updated");
+        expect(next.projects[0]?.trackedRepositoryIdentities).toEqual(kept);
+      },
+    );
+
+    it("takes a list the update sends", () => {
+      const next = applyShellStreamEvent(tracking, {
+        kind: "project.updated",
+        sequence: 2,
+        project: {
+          ...v2Project,
+          trackedFolders: [api],
+          trackedRepositoryIdentities: [repositoryIdentity],
+        },
+      });
+      expect(next.projects[0]?.trackedRepositoryIdentities).toEqual([repositoryIdentity]);
+    });
+
+    it.each([
+      [
+        "takes a resolved folder's new list",
+        [otherIdentity],
+        [repositoryIdentity],
+        [api.path],
+        [repositoryIdentity],
+      ],
+      [
+        "drops the list when a resolved folder has none",
+        [otherIdentity],
+        undefined,
+        [api.path],
+        undefined,
+      ],
+      [
+        "fills in a list it lacks while unresolved",
+        undefined,
+        [repositoryIdentity],
+        [],
+        [repositoryIdentity],
+      ],
+      [
+        "keeps its list while unresolved",
+        [otherIdentity],
+        [repositoryIdentity],
+        [],
+        [otherIdentity],
+      ],
+    ] as const)("an enrichment refresh %s", (_name, held, sent, resolvedRoots, expected) => {
+      const project = { ...v2Project, trackedFolders: [api, docs] };
+      const withList = (list: typeof held | typeof sent) =>
+        list === undefined ? project : { ...project, trackedRepositoryIdentities: [...list] };
+      const next = mergeShellSnapshotProjects(
+        { ...v2ShellSnapshot, snapshotSequence: 5, projects: [withList(held)] },
+        { ...v2ShellSnapshot, snapshotSequence: 4, projects: [withList(sent)] },
+        { resolvedRepositoryIdentityRoots: resolvedRoots },
+      );
+      expect(next.projects[0]?.trackedRepositoryIdentities).toEqual(expected);
+      expect(Object.hasOwn(next.projects[0] ?? {}, "trackedRepositoryIdentities")).toBe(
+        expected !== undefined,
+      );
+    });
+  });
+
   it("authoritative lower-sequence reset replaces client-ahead structural state", () => {
     const unchanged = { ...v2Project, id: ProjectId.make("project-unchanged"), repositoryIdentity };
     const previous = {

@@ -52,6 +52,9 @@
   "eb0f60ef4f92ab7d": "请从 {fjUrl} 安装 {fj} 0.6 或更高版本并运行 {fjLogin}，或从 {teaUrl} 安装 {tea} 0.16 或更高版本，并为每个 Forgejo 或 Gitea 服务器运行 {teaLogin}。",
   "d026a85e2e50e675": "请使用 {install} 安装 GitCafe CLI，然后运行 {login}、在设置中保存 token，或在服务器上设置 {variable}。",
   "22d3c0c48a34b5b3": "请使用 {install} 安装 TanStack Source CLI，然后运行 {login}、在设置中保存 token，或在服务器上设置 {variable}。",
+  "645cd6e4214f49bc": "请登录你的 Gice 服务器或在设置中保存访问 token、在服务器上设置 {host} 和 {token}，或运行 {login}。",
+  "7b09564f31eb8171": "PR 和内容的读写权限",
+  "2c5e89f5b1893017": "repo:write、issues:write 和 workflows:write 权限范围",
   "756c80ad262ef315": "正在原始对话中等待",
   "d8df14f9905f38eb": "已发送",
   "e7c59185f8ab3987": "未发送",
@@ -7063,6 +7066,7 @@
   "d4bfcdc6bb7676a3": "{count, plural, other {合并 {count} 个 {term, select, mr {merge request} cr {change request} other {pull request}}？}}",
   "b9f2a24a3757f6c9": "{count, plural, other {变基 {count} 个 {term, select, mr {merge request} cr {change request} other {pull request}}？}}",
   "d1bcf19eb2753fff": "使用 {method} 将 #{number} 及其下方未合并的各层合并到 {base}。{host} 会在合并或排队前检查它们的规则，并在合并后对剩余堆叠执行变基。",
+  "313aa73c12a8be38": "使用 {method} 将 #{number} 及其下方未合并的各层合并到 {base}。{host} 会在合并前检查它们的规则。",
   "31d2f22f5a282719": "将远端分支自下而上变基到 {base}。这会重写分支历史，并可能重新运行检查。如果某一层失败，之前的更新会保留。",
   "a0adf78733c368ae": "合并堆叠",
   "140dc384c58b74f3": "对堆叠变基",
@@ -10848,22 +10852,24 @@
   ],
   "b53527a02b031077": "复制登录代码时剪贴板 API 不可用。",
   "a9a5c6fe0166c0e3": "无法将登录代码复制到剪贴板。",
-  "f18f93cf2941bfc3": "已登录的 GitHub 账户",
+  "57700bc8fd922517": "已登录的 {host} 账户",
   "f7b3ac7ea71b2a41": "显示账户",
   "8de5a4366b58bdba": "隐藏账户",
   "362486999f207b7d": "已登录，但只要下方保存的 token 可读取，就会优先使用该 token。",
   "9e8db85a88bbfa4a": "已登录",
-  "4e4ab7e39d3cb684": "在 GitHub 上授权此应用以完成登录。",
-  "154b0a0947b7f831": "GitHub API 请求额度远高于个人 token 或 gh 登录。",
-  "e860c536bb9cad2d": "使用 GitHub 登录",
-  "c97e21dd6897fa79": [
-    "已登录为",
+  "9bf7875495e7309e": "在 {host} 上授权此应用以完成登录。",
+  "196d72d647eed45e": "比个人 token 或 CLI 登录高得多的 {host} API 速率限制。",
+  "2f68fd4677b789af": "使用 {host} 登录",
+  "7722fb4a8bc7b360": "在浏览器中登录你的 {host} 服务器，无需创建或粘贴 token。",
+  "b4c93ac0a00ab769": "{host} 服务器地址",
+  "c9a117a70e138c42": [
+    "复制验证码并打开 ",
     {
-      "t": "RedactedSensitiveText",
-      "i": 1
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
     }
   ],
-  "a9d6996c73500a5c": "复制验证码并打开 GitHub",
   "4b4a237faa5c3ded": [
     "正在等待批准 · 代码将于 ",
     {
@@ -10873,9 +10879,55 @@
     },
     " 过期"
   ],
+  "f2d5e7b16e6274fa": [
+    "仅当 ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " 显示此验证码时才授权，并输入页面要求的那部分。在其他设备上，请访问 ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "。"
+  ],
+  "6d9a8f08323c1e9d": [
+    "请求 ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    "。",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " 会在你授权前逐项说明。"
+  ],
+  "c97e21dd6897fa79": [
+    "已登录为",
+    {
+      "t": "RedactedSensitiveText",
+      "i": 1
+    }
+  ],
   "795283fe03fcfac4": "可访问已安装此应用的账户和组织中的仓库。",
   "834dced9a4651f60": "为组织安装",
-  "d15cc7522e8d9637": "在 GitHub 上管理",
+  "ae342d2dde02dd31": [
+    "在 ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " 上管理"
+  ],
+  "32111e0efc4c768e": "重新登录",
   "719fdde2cc71cced": "已认证",
   "d6845667c3278af2": "未认证",
   "7813f10f3f534004": "状态未知",
@@ -10964,7 +11016,6 @@
   "76a2280b1b70b042": "或使用你自己的凭据",
   "027d70661a6fc7ac": "重新扫描 Git 和托管集成",
   "847dfcd39ed0f9a5": "连接一个环境以查看其版本控制工具和托管集成。",
-  "7b09564f31eb8171": "PR 和内容的读写权限",
   "8dd881ec9fd8c074": "{host} token",
   "4f7ff2645d23d463": "未保存 token；服务器使用 {envVar} 或 {cliName} 登录。",
   "8ea7a295f2739627": "已为 {hosts} 保存。",

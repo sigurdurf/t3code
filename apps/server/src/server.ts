@@ -756,7 +756,7 @@ const layerRuntimeCoreDependenciesBase = Layer.mergeAll(
   ).pipe(
     Layer.provideMerge(PullRequestSyncReactor.layer),
     Layer.provide(layerPullRequestService),
-    Layer.provide(ProjectionStoreV2.layer),
+    Layer.provide(Layer.mergeAll(ProjectionStoreV2.layer, RuntimeLayer.layerProjectService)),
   ),
   Layer.effectDiscard(
     Effect.gen(function* () {

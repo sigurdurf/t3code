@@ -84,10 +84,7 @@ export const LinkedPullRequestRow = memo(function LinkedPullRequestRow(props: {
   const watching = open && link.watch !== undefined;
   const additions = snapshot?.additions ?? 0;
   const deletions = snapshot?.deletions ?? 0;
-  const term = changeRequestTermKind(
-    (sourceControlClients.findByChangeRequestUrl(link.url) ?? sourceControlClients.get(undefined))
-      .changeRequest,
-  );
+  const term = changeRequestTermKind(sourceControlClients.changeRequestTerminology(link.url));
   const metaLineHeight = useScaledTextRole("label").lineHeight * useWindowDimensions().fontScale;
   const row = (
     <Pressable

@@ -82,12 +82,12 @@ export function resolveLinkPullRequestInput(
   resolve: MFunctionType = mFallback,
 ): { link: ResolvedLink } | { error: string } | null {
   const parsed =
-    sourceControlClients.parseChangeRequestUrl(input.reference.trim()) !== null
+    sourceControlClients.parseChangeRequestLink(input.reference.trim()) !== null
       ? input.reference.trim()
       : parsePullRequestReference(input.reference);
   if (parsed === null) return null;
-  const url = sourceControlClients.parseChangeRequestUrl(parsed)?.link;
-  if (url !== undefined) {
+  const url = sourceControlClients.parseChangeRequestLink(parsed);
+  if (url !== null) {
     if (!input.hasProject({ ...url, url: parsed })) {
       return {
         error: resolve(
@@ -119,9 +119,8 @@ export function resolveLinkPullRequestInput(
     };
   }
   const webUrl = input.project.webUrl(number);
-  const webReference =
-    webUrl === null ? undefined : sourceControlClients.parseChangeRequestUrl(webUrl)?.link;
-  if (webUrl === null || webReference === undefined) {
+  const webReference = webUrl === null ? null : sourceControlClients.parseChangeRequestLink(webUrl);
+  if (webUrl === null || webReference === null) {
     return {
       error: resolve(
         msg("Paste a full URL; this project's host has no known {changeRequest} URL.", {

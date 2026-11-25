@@ -1,4 +1,5 @@
 import {
+  isPullRequestReviewAnchor,
   parsePullRequestAnchor,
   pullRequestAnchorMatchesUrl,
   pullRequestLinkCommit,
@@ -937,11 +938,9 @@ function boundedField(value: string): string {
   return bounded(value.replace(/\s+/gu, " "));
 }
 
-// Prompt builders are handed a change request's URL, not its detail; a URL no host claims reads
-// as the default host, as an unreported repository does.
+// Prompt builders are handed a change request's URL, not its detail.
 function terminologyForUrl(url: string): ChangeRequestTerminology {
-  return (sourceControlClients.findByChangeRequestUrl(url) ?? sourceControlClients.get(undefined))
-    .changeRequest;
+  return sourceControlClients.changeRequestTerminology(url);
 }
 
 function reviewThreadText(thread: PullRequestReviewThread): string {
@@ -1063,6 +1062,8 @@ export function buildFixFindingsHandoff(input: {
   readonly checks: ReadonlyArray<PullRequestCheck>;
   readonly commentsTruncated: boolean;
   readonly inThisThread?: boolean;
+  /** The host the detail came from, which its URL alone may not tell. */
+  readonly provider?: SourceControlProviderKind;
 }): FixFindingsHandoff {
   const threads = input.reviewThreads.filter(
     (thread) =>
@@ -1125,7 +1126,7 @@ export function buildFixFindingsHandoff(input: {
         : []),
       ...(input.commentsTruncated
         ? [
-            `The conversation was truncated; more review comments may exist on ${sourceControlClients.hostLabelForChangeRequestUrl(input.url)}.`,
+            `The conversation was truncated; more review comments may exist on ${input.provider === undefined ? "the host" : sourceControlClients.get(input.provider).label}.`,
           ]
         : []),
       ...(omitted > 0 ? [`${omitted} further findings were omitted.`] : []),
@@ -1359,7 +1360,7 @@ function remarkText(remark: string, review: ReadonlyArray<string>): string {
   return `${remark.slice(0, end)}\n… ${omitted} more characters of the review summary are omitted; read it at the review link.\n\n${after}`;
 }
 
-/** A GitHub review summary's link and the line comments it posted, which live in other threads. */
+/** A review summary's link and the line comments it posted, which live in other threads. */
 function reviewLineComments(
   comment: PullRequestComment,
   pullRequest: {
@@ -1369,8 +1370,8 @@ function reviewLineComments(
 ): ReadonlyArray<string> {
   const reviewThreads = pullRequest.reviewThreads;
   const anchor = comment.kind === "review" ? parsePullRequestAnchor(comment.url) : null;
-  // Only GitHub links line comments to their review, so no other host can say it posted none.
-  if (anchor?.kind !== "timeline" || !/^pullrequestreview-\d+$/i.test(anchor.anchor)) return [];
+  // Only hosts whose line comments name their review can say it posted none.
+  if (anchor?.kind !== "timeline" || !isPullRequestReviewAnchor(anchor.anchor)) return [];
   const posted = reviewThreads.flatMap((thread) =>
     thread.comments.flatMap((lineComment) => {
       const body = readableBody(lineComment.body);
@@ -1746,8 +1747,8 @@ export function resolveDisplayedPullRequestDetail(input: {
     return null;
   }
   if (input.reference.host === undefined) return input.cached;
-  const link = sourceControlClients.parseChangeRequestUrl(input.cached.url)?.link;
-  return link !== undefined && (link.authority ?? link.host) === input.reference.host.toLowerCase()
+  const link = sourceControlClients.parseChangeRequestLink(input.cached.url);
+  return link !== null && (link.authority ?? link.host) === input.reference.host.toLowerCase()
     ? input.cached
     : null;
 }

@@ -569,6 +569,7 @@ function withRateLimitBackoff(
       ? {}
       : { readsPublicHostWithoutCheckout: api.readsPublicHostWithoutCheckout }),
     ...(api.batchesReads === undefined ? {} : { batchesReads: api.batchesReads }),
+    ...(api.detailChecks === undefined ? {} : { detailChecks: api.detailChecks }),
     getViewer:
       options?.viewerAllowsPause === true
         ? interactive("getViewer", api.getViewer)
@@ -1635,6 +1636,7 @@ export const make = Effect.gen(function* () {
                     number,
                   })),
                 ),
+                ...(cursor.resumeAfter === undefined ? {} : { resumeAfter: cursor.resumeAfter }),
               },
             }),
       }).pipe(
@@ -1679,7 +1681,7 @@ export const make = Effect.gen(function* () {
                 truncated: page.truncated,
                 nextCursor:
                   page.truncated && boundary !== null
-                    ? listCursorAt(cursorHere, boundary, fetched, items.length)
+                    ? listCursorAt(cursorHere, boundary, fetched, items.length, page.resumeAfter)
                     : null,
               });
             },
@@ -1697,7 +1699,9 @@ export const make = Effect.gen(function* () {
         separate.push(project);
         continue;
       }
-      const key = `${project.host}\n${cursorOf(project)?.updatedBefore ?? ""}`;
+      // One read carries on only where its repositories stopped together.
+      const cursor = cursorOf(project);
+      const key = `${project.host}\n${cursor?.updatedBefore ?? ""}\n${cursor?.resumeAfter ?? ""}`;
       const group = together.get(key);
       if (group === undefined) together.set(key, [project]);
       else group.push(project);
@@ -3421,11 +3425,11 @@ export const make = Effect.gen(function* () {
       return detailUncached(refOfCacheKey(key)).pipe(
         Effect.tap(
           Effect.fn("PullRequestService.recordDetailStats")(function* (value: PullRequestDetail) {
-            // GitHub and Azure detail include the same checks; the checks TTL counts from their observation.
-            // Azure detail answers a failed policy read with no checks, which must not be cached.
+            // The checks TTL counts from the detail's observation.
+            const detailChecks = registry.get(value.provider)?.detailChecks;
             if (
-              (value.provider === "github" ||
-                (value.provider === "azure-devops" && value.checks.length > 0)) &&
+              (detailChecks === "complete" ||
+                (detailChecks === "when-found" && value.checks.length > 0)) &&
               value.observedAt !== undefined &&
               !(yield* Cache.has(checksCache, key))
             ) {

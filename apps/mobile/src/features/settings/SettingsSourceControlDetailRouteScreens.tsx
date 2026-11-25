@@ -118,13 +118,21 @@ export function SettingsSourceControlProviderRouteScreen({
           {appSignIn ? (
             <SettingsSection
               title={gt("Sign in", { $context: "settings section title" })}
-              footer={gt("A far higher API rate limit than a personal token or CLI login.")}
+              footer={
+                appSignIn.hosts === undefined
+                  ? gt(
+                      "Sign in to your {host} server in the browser, with no token to create or paste.",
+                      { host: definition.label },
+                    )
+                  : gt("A far higher API rate limit than a personal token or CLI login.")
+              }
             >
               <AppSignInRow
                 environment={environment}
                 label={appSignIn.appName}
                 definition={definition}
                 appSignIn={appSignIn}
+                auth={item?.auth}
                 disabled={disabled}
               />
             </SettingsSection>

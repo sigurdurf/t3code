@@ -1,6 +1,9 @@
 import { parsePullRequestAnchor } from "@t3tools/shared/pullRequestAnchor";
 import { resolveChangeRequestLinkTarget } from "@t3tools/client-runtime/change-request-links";
-import { sourceControlClients } from "@t3tools/client-runtime/source-control-clients";
+import {
+  sourceControlClients,
+  type ChangeRequestHosts,
+} from "@t3tools/client-runtime/source-control-clients";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
 import { EnvironmentId, ProjectId, type IssueRef } from "@t3tools/contracts";
 
@@ -38,8 +41,9 @@ export function nativePullRequestDestination(
 export function pullRequestCandidateForIssueLink(
   url: string,
   ref: Pick<IssueRef, "projectId" | "host" | "scope" | "key">,
+  hosts: ChangeRequestHosts,
 ) {
-  const candidateUrl = sourceControlClients.changeRequestUrlFromReferenceAutolink(url);
+  const candidateUrl = sourceControlClients.changeRequestUrlFromReferenceAutolink(url, hosts);
   const number = Number(ref.key);
   if (candidateUrl === null || !Number.isInteger(number) || number <= 0) return null;
   return {

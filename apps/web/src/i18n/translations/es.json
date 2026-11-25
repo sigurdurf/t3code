@@ -52,6 +52,9 @@
   "eb0f60ef4f92ab7d": "Instala {fj} 0.6 o posterior desde {fjUrl} y ejecuta {fjLogin}, o instala {tea} 0.16 o posterior desde {teaUrl} y ejecuta {teaLogin} para cada servidor de Forgejo o Gitea.",
   "d026a85e2e50e675": "Instala la CLI de GitCafe con {install} y ejecuta {login}, guarda un token en Ajustes o define {variable} en el servidor.",
   "22d3c0c48a34b5b3": "Instala la CLI de TanStack Source con {install} y ejecuta {login}, guarda un token en Ajustes o define {variable} en el servidor.",
+  "645cd6e4214f49bc": "Inicia sesión en tu servidor de Gice o guarda un token de acceso en Ajustes, define {host} y {token} en el servidor o ejecuta {login}.",
+  "7b09564f31eb8171": "acceso de lectura y escritura a pull requests y contenido",
+  "2c5e89f5b1893017": "los ámbitos repo:write, issues:write y workflows:write",
   "756c80ad262ef315": "En espera en el hilo original",
   "d8df14f9905f38eb": "Enviado",
   "e7c59185f8ab3987": "No enviado",
@@ -7050,6 +7053,7 @@
   "d4bfcdc6bb7676a3": "{count, plural, one {¿Fusionar {count} {term, select, mr {merge request} cr {solicitud de cambios} other {pull request}}?} other {¿Fusionar {count} {term, select, mr {merge requests} cr {solicitudes de cambios} other {pull requests}}?}}",
   "b9f2a24a3757f6c9": "{count, plural, one {¿Hacer rebase de {count} {term, select, mr {merge request} cr {solicitud de cambios} other {pull request}}?} other {¿Hacer rebase de {count} {term, select, mr {merge requests} cr {solicitudes de cambios} other {pull requests}}?}}",
   "d1bcf19eb2753fff": "Fusiona #{number} y sus capas sin fusionar de debajo en {base} mediante {method}. {host} comprueba sus reglas antes de fusionarlas o ponerlas en cola, y hace rebase del resto de la pila después de fusionar.",
+  "313aa73c12a8be38": "Fusiona #{number} y sus capas sin fusionar de debajo en {base} mediante {method}. {host} comprueba sus reglas antes de fusionarlas.",
   "31d2f22f5a282719": "Hace rebase de las ramas remotas de abajo arriba sobre {base}. Esto reescribe el historial de las ramas y puede reiniciar las comprobaciones. Si una capa falla, las actualizaciones anteriores se mantienen.",
   "a0adf78733c368ae": "Fusionar pila",
   "140dc384c58b74f3": "Hacer rebase de la pila",
@@ -10824,22 +10828,24 @@
   ],
   "b53527a02b031077": "La API del portapapeles no está disponible al copiar el código de inicio de sesión.",
   "a9a5c6fe0166c0e3": "No se pudo copiar el código de inicio de sesión al portapapeles.",
-  "f18f93cf2941bfc3": "Cuenta de GitHub con sesión iniciada",
+  "57700bc8fd922517": "Cuenta de {host} con sesión iniciada",
   "f7b3ac7ea71b2a41": "Mostrar cuenta",
   "8de5a4366b58bdba": "Ocultar cuenta",
   "362486999f207b7d": "Sesión iniciada, pero se usa el token guardado abajo mientras se pueda leer.",
   "9e8db85a88bbfa4a": "Sesión iniciada",
-  "4e4ab7e39d3cb684": "Aprueba la app en GitHub para terminar de iniciar sesión.",
-  "154b0a0947b7f831": "Un límite de solicitudes de la API de GitHub mucho mayor que con un token personal o gh login.",
-  "e860c536bb9cad2d": "Iniciar sesión con GitHub",
-  "c97e21dd6897fa79": [
-    "Sesión iniciada como",
+  "9bf7875495e7309e": "Aprueba la app en {host} para terminar de iniciar sesión.",
+  "196d72d647eed45e": "Un límite de solicitudes de la API de {host} mucho mayor que con un token personal o un inicio de sesión de la CLI.",
+  "2f68fd4677b789af": "Iniciar sesión con {host}",
+  "7722fb4a8bc7b360": "Inicia sesión en tu servidor de {host} en el navegador, sin crear ni pegar un token.",
+  "b4c93ac0a00ab769": "Dirección del servidor de {host}",
+  "c9a117a70e138c42": [
+    "Copiar código y abrir ",
     {
-      "t": "RedactedSensitiveText",
-      "i": 1
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
     }
   ],
-  "a9d6996c73500a5c": "Copiar código y abrir GitHub",
   "4b4a237faa5c3ded": [
     "Esperando aprobación · el código caduca a las ",
     {
@@ -10848,9 +10854,54 @@
       "v": "v"
     }
   ],
+  "f2d5e7b16e6274fa": [
+    "Aprueba solo si ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " muestra este código y escribe la parte que pida la página. En otro dispositivo, ve a ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "."
+  ],
+  "6d9a8f08323c1e9d": [
+    "Solicita ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    ". ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " explica cada uno antes de que apruebes."
+  ],
+  "c97e21dd6897fa79": [
+    "Sesión iniciada como",
+    {
+      "t": "RedactedSensitiveText",
+      "i": 1
+    }
+  ],
   "795283fe03fcfac4": "Llega a los repositorios de las cuentas y organizaciones que instalaron la app.",
   "834dced9a4651f60": "Instalar en una organización",
-  "d15cc7522e8d9637": "Gestionar en GitHub",
+  "ae342d2dde02dd31": [
+    "Gestionar en ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "32111e0efc4c768e": "Volver a iniciar sesión",
   "719fdde2cc71cced": "Autenticado",
   "d6845667c3278af2": "No autenticado",
   "7813f10f3f534004": "Estado desconocido",
@@ -10939,7 +10990,6 @@
   "76a2280b1b70b042": "O usa tus propias credenciales",
   "027d70661a6fc7ac": "Volver a escanear Git y las integraciones de hosting",
   "847dfcd39ed0f9a5": "Conecta un entorno para inspeccionar sus herramientas de control de versiones e integraciones de hosting.",
-  "7b09564f31eb8171": "acceso de lectura y escritura a pull requests y contenido",
   "8dd881ec9fd8c074": "Token de {host}",
   "4f7ff2645d23d463": "No hay token guardado; el servidor usa {envVar} o el inicio de sesión de {cliName}.",
   "8ea7a295f2739627": "Guardado para {hosts}.",

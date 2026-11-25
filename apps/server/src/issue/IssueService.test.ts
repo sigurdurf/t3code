@@ -306,6 +306,24 @@ describe("IssueService", () => {
         key: "7",
       });
 
+      // And for a self-hosted Gice server whose hostname does not name Gice.
+      const gice = yield* makeService({
+        projects: [
+          project({
+            id: "gice-self-hosted",
+            repository: "acme/web",
+            provider: "gice",
+            host: "code.acme.test",
+          }),
+        ],
+        trackers: [fakeTracker({ kind: IssueTrackerKind.make("gice") })],
+      });
+      expect(yield* gice.resolveUrl("https://code.acme.test/acme/web/issues/7")).toMatchObject({
+        projectId: "gice-self-hosted",
+        host: "code.acme.test",
+        key: "7",
+      });
+
       // A fork lists its upstream's issues and its own, counted once, and may write to both.
       const fork = project({ id: "fork", repository: "acme/web" });
       const forked = yield* makeService({

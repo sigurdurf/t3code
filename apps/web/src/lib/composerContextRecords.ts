@@ -215,8 +215,11 @@ export function pullRequestContextKindLabel(
   resolve?: MessageResolver,
 ): string {
   const url = comment.pullRequest?.url;
-  const host = url === undefined ? null : sourceControlClients.findByChangeRequestUrl(url);
-  const term = (host ?? sourceControlClients.get(undefined)).changeRequest.singular;
+  const term = (
+    url === undefined
+      ? sourceControlClients.get(undefined).changeRequest
+      : sourceControlClients.changeRequestTerminology(url)
+  ).singular;
   const state = pullRequestContextDisplayState(comment);
   if (resolve !== undefined) {
     const variables = { term: changeRequestTermKind({ singular: term }) };

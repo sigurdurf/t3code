@@ -29,6 +29,8 @@ it.each([
   "event-123",
   "note_123",
   "comment-123",
+  "review-123",
+  "discussion-123",
 ])("preserves timeline anchor %s", (anchor) => {
   expect(parsePullRequestAnchor(`${url}#${anchor}`)).toEqual({ kind: "timeline", anchor });
 });
@@ -189,4 +191,18 @@ it("finds a review with no text of its own through the earliest comment it poste
     "pullrequestreview-8",
   );
   expect(resolvePullRequestReviewAnchor("issuecomment-9", [], threads)).toBe("issuecomment-9");
+  // Gice names a review `review-<id>` and an inline comment `discussion-<id>`.
+  const giceReview = `${forgejo}#review-9`;
+  const giceThreads = [
+    {
+      comments: [
+        {
+          url: `${forgejo}#discussion-2`,
+          createdAt: "2026-07-01T00:01:00Z",
+          reviewUrl: giceReview,
+        },
+      ],
+    },
+  ];
+  expect(resolvePullRequestReviewAnchor("review-9", [], giceThreads)).toBe("discussion-2");
 });

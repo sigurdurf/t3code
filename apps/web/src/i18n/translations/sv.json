@@ -52,6 +52,9 @@
   "eb0f60ef4f92ab7d": "Installera {fj} 0.6 eller senare från {fjUrl} och kör {fjLogin}, eller installera {tea} 0.16 eller senare från {teaUrl} och kör {teaLogin} för varje Forgejo- eller Gitea-server.",
   "d026a85e2e50e675": "Installera GitCafe CLI med {install} och kör sedan {login}, spara en token i Inställningar eller ange {variable} på servern.",
   "22d3c0c48a34b5b3": "Installera TanStack Source CLI med {install} och kör sedan {login}, spara en token i Inställningar eller ange {variable} på servern.",
+  "645cd6e4214f49bc": "Logga in på din Gice-server eller spara en åtkomsttoken i Inställningar, ange {host} och {token} på servern eller kör {login}.",
+  "7b09564f31eb8171": "läs- och skrivåtkomst till pull requests och innehåll",
+  "2c5e89f5b1893017": "behörigheterna repo:write, issues:write och workflows:write",
   "756c80ad262ef315": "Väntar i den ursprungliga tråden",
   "d8df14f9905f38eb": "Skickat",
   "e7c59185f8ab3987": "Inte skickat",
@@ -7056,6 +7059,7 @@
   "d4bfcdc6bb7676a3": "{count, plural, one {Merga {count} {term, select, mr {merge request} cr {ändringsbegäran} other {pull request}}?} other {Merga {count} {term, select, mr {merge requests} cr {ändringsbegäranden} other {pull requests}}?}}",
   "b9f2a24a3757f6c9": "{count, plural, one {Rebasa {count} {term, select, mr {merge request} cr {ändringsbegäran} other {pull request}}?} other {Rebasa {count} {term, select, mr {merge requests} cr {ändringsbegäranden} other {pull requests}}?}}",
   "d1bcf19eb2753fff": "Merga #{number} och dess omergade lager under in i {base} med {method}. {host} kontrollerar sina regler innan de mergas eller köas och rebasar resten av stacken efter mergen.",
+  "313aa73c12a8be38": "Merga #{number} och dess omergade lager under in i {base} med {method}. {host} kontrollerar sina regler innan de mergas.",
   "31d2f22f5a282719": "Rebasa fjärrgrenarna nerifrån och upp på {base}. Det här skriver om grenhistoriken och kan starta om kontroller. Om ett lager misslyckas finns tidigare uppdateringar kvar.",
   "a0adf78733c368ae": "Merga stacken",
   "140dc384c58b74f3": "Rebasa stacken",
@@ -10836,22 +10840,24 @@
   ],
   "b53527a02b031077": "Urklipps-API:t är inte tillgängligt vid kopiering av inloggningskoden.",
   "a9a5c6fe0166c0e3": "Kunde inte kopiera inloggningskoden till urklipp.",
-  "f18f93cf2941bfc3": "Inloggat GitHub-konto",
+  "57700bc8fd922517": "Inloggat {host}-konto",
   "f7b3ac7ea71b2a41": "Visa konto",
   "8de5a4366b58bdba": "Dölj konto",
   "362486999f207b7d": "Inloggad, men token som sparats nedan används så länge den kan läsas.",
   "9e8db85a88bbfa4a": "Inloggad",
-  "4e4ab7e39d3cb684": "Godkänn appen på GitHub för att slutföra inloggningen.",
-  "154b0a0947b7f831": "En mycket högre gräns för GitHub API än en personlig token eller gh login.",
-  "e860c536bb9cad2d": "Logga in med GitHub",
-  "c97e21dd6897fa79": [
-    "Inloggad som",
+  "9bf7875495e7309e": "Godkänn appen på {host} för att slutföra inloggningen.",
+  "196d72d647eed45e": "En betydligt högre gräns för {host}s API än en personlig token eller CLI-inloggning.",
+  "2f68fd4677b789af": "Logga in med {host}",
+  "7722fb4a8bc7b360": "Logga in på din {host}-server i webbläsaren, utan någon token att skapa eller klistra in.",
+  "b4c93ac0a00ab769": "Adress till {host}-servern",
+  "c9a117a70e138c42": [
+    "Kopiera koden och öppna ",
     {
-      "t": "RedactedSensitiveText",
-      "i": 1
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
     }
   ],
-  "a9d6996c73500a5c": "Kopiera koden och öppna GitHub",
   "4b4a237faa5c3ded": [
     "Väntar på godkännande · koden går ut ",
     {
@@ -10860,9 +10866,54 @@
       "v": "v"
     }
   ],
+  "f2d5e7b16e6274fa": [
+    "Godkänn bara om ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " visar den här koden, och skriv den del av den som sidan ber om. På en annan enhet går du till ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "."
+  ],
+  "6d9a8f08323c1e9d": [
+    "Begär ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    ". ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " förklarar var och en innan du godkänner."
+  ],
+  "c97e21dd6897fa79": [
+    "Inloggad som",
+    {
+      "t": "RedactedSensitiveText",
+      "i": 1
+    }
+  ],
   "795283fe03fcfac4": "Når repon i konton och organisationer som har installerat appen.",
   "834dced9a4651f60": "Installera i en organisation",
-  "d15cc7522e8d9637": "Hantera på GitHub",
+  "ae342d2dde02dd31": [
+    "Hantera på ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "32111e0efc4c768e": "Logga in igen",
   "719fdde2cc71cced": "Autentiserad",
   "d6845667c3278af2": "Inte autentiserad",
   "7813f10f3f534004": "Status okänd",
@@ -10951,7 +11002,6 @@
   "76a2280b1b70b042": "Eller använd dina egna autentiseringsuppgifter",
   "027d70661a6fc7ac": "Genomsök Git- och värdintegrationer igen",
   "847dfcd39ed0f9a5": "Anslut en miljö för att granska dess versionshanteringsverktyg och värdintegrationer.",
-  "7b09564f31eb8171": "läs- och skrivåtkomst till pull requests och innehåll",
   "8dd881ec9fd8c074": "Token för {host}",
   "4f7ff2645d23d463": "Ingen token sparad; servern använder {envVar} eller {cliName}-inloggningen.",
   "8ea7a295f2739627": "Sparad för {hosts}.",

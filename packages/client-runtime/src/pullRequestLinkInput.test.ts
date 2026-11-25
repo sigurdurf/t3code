@@ -26,7 +26,7 @@ describe("resolveLinkPullRequestInput", () => {
     ]) {
       const url = `https://${host}/acme/${repository}/${route}/42`;
       expect(
-        sourceControlClients.get("gitcafe").parseChangeRequestUrl(new URL(url)),
+        sourceControlClients.get("gitcafe").parseChangeRequestUrl(new URL(url), false),
       ).not.toBeNull();
       expect(parsePullRequestReference(url)).toBe(url);
       expect(

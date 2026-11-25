@@ -12,6 +12,7 @@ import { use, useMemo } from "react";
 
 import { connectionAtomRuntime } from "../connection/runtime";
 import { appAtomRegistry } from "./atom-registry";
+import { environmentProjects } from "./projects";
 import { serverEnvironment } from "./server";
 import { environmentThreadShells } from "./threads";
 import { useEnvironmentQuery } from "./query";
@@ -74,6 +75,8 @@ export function withKnownPullRequestSummary<
           { host: params.host, repository: params.repository, number: params.number },
           appAtomRegistry.get(environmentThreadShells.threadShellsAtom),
           appAtomRegistry.get(pullRequestSnapshotsAtom).values(),
+          (environmentId) =>
+            appAtomRegistry.get(environmentProjects.changeRequestHostsAtom(environmentId)),
         );
   return initialSummary === undefined ? params : { ...params, initialSummary };
 }

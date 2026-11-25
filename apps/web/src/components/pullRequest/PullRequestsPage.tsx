@@ -1517,9 +1517,7 @@ export function PullRequestsPage() {
     event.stopPropagation();
     if (event.repeat) return;
     const url = openPanelPullRequestUrl;
-    const terminology = (
-      sourceControlClients.findByChangeRequestUrl(url) ?? sourceControlClients.get(undefined)
-    ).changeRequest;
+    const terminology = sourceControlClients.changeRequestTerminology(url);
     void writeTextToClipboard(url, {
       target: `${terminology.singular} link`,
       unavailableMessage: msg(

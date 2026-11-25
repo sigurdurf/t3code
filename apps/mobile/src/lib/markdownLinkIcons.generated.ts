@@ -5,6 +5,7 @@ export const SOURCE_CONTROL_LINK_ICON_SOURCES: Readonly<Record<string, ImageSour
   bitbucket: require("../../assets/link-icons/bitbucket.png"),
   "cursor-origin": require("../../assets/link-icons/cursor-origin.png"),
   forgejo: require("../../assets/link-icons/forgejo.png"),
+  gice: require("../../assets/link-icons/gice.png"),
   gitcafe: require("../../assets/link-icons/gitcafe.png"),
   github: require("../../assets/link-icons/github.png"),
   gitlab: require("../../assets/link-icons/gitlab.png"),

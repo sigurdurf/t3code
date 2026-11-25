@@ -721,6 +721,7 @@ export const WS_METHODS = {
   sourceControlSignInStart: "sourceControl.signInStart",
   sourceControlSignInWait: "sourceControl.signInWait",
   sourceControlSignInCancel: "sourceControl.signInCancel",
+  sourceControlSignOut: "sourceControl.signOut",
   sourceControlAppAccess: "sourceControl.appAccess",
   sourceControlStarred: "sourceControl.starred",
   sourceControlStar: "sourceControl.star",
@@ -1567,6 +1568,13 @@ const WsSourceControlSignInWaitRpc = Rpc.make(WS_METHODS.sourceControlSignInWait
 
 // Ends the sign-in `signInStart` began, so approving the code afterwards signs nothing in.
 const WsSourceControlSignInCancelRpc = Rpc.make(WS_METHODS.sourceControlSignInCancel, {
+  payload: SourceControlSignInInput,
+  success: Schema.Void,
+  error: Schema.Union([SourceControlSignInError, EnvironmentAuthorizationError]),
+});
+
+// Ends the server's app sign-in to a host, at the host too where it can.
+const WsSourceControlSignOutRpc = Rpc.make(WS_METHODS.sourceControlSignOut, {
   payload: SourceControlSignInInput,
   success: Schema.Void,
   error: Schema.Union([SourceControlSignInError, EnvironmentAuthorizationError]),
@@ -2620,6 +2628,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsSourceControlSignInStartRpc,
   WsSourceControlSignInWaitRpc,
   WsSourceControlSignInCancelRpc,
+  WsSourceControlSignOutRpc,
   WsSourceControlAppAccessRpc,
   WsSourceControlStarredRpc,
   WsSourceControlStarRpc,

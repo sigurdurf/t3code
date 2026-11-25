@@ -94,6 +94,7 @@ export const definition = defineSourceControl({
   checkoutCommandArgument: () => null,
   isChangeRequestReference: (url) => parsePullRequestUrl(url) !== null,
   checkoutChangeRequestHost: () => null,
+  recognizedNameFixesUrls: true,
   recognizeRemote: ({ hostname }) =>
     GITCAFE_HOSTS.has(hostname)
       ? { kind: KIND, name: "GitCafe", baseUrl: `https://${hostname}` }

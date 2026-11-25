@@ -331,7 +331,7 @@ function pullRequestStackReference(
     ? null
     : {
         ...reference,
-        host: reference.host ?? sourceControlClients.parseChangeRequestUrl(detail.url)?.link.host,
+        host: reference.host ?? sourceControlClients.parseChangeRequestLink(detail.url)?.host,
       };
 }
 
@@ -434,9 +434,9 @@ export function PullRequestDetailPanel({
     listEntry.number === reference.number
       ? listEntry
       : null;
-  const linkedReference = sourceControlClients.parseChangeRequestUrl(
+  const linkedReference = sourceControlClients.parseChangeRequestLink(
     matchingListEntry?.url ?? unavailableHostUrl ?? "",
-  )?.link;
+  );
   useEnvironmentQuery(
     context === "page" &&
       supportsThreadPullRequests &&
@@ -669,7 +669,7 @@ export function PullRequestDetailPanel({
   const repositoryUrl =
     detail === null
       ? null
-      : (sourceControlClients.parseChangeRequestUrl(detail.url)?.link.repositoryUrl ?? null);
+      : (sourceControlClients.parseChangeRequestLink(detail.url)?.repositoryUrl ?? null);
   const hostClient = sourceControlClients.get(detail?.provider);
   const openOnHostText = openOnHostLabel(hostClient, resolve);
   const markdownContext = pullRequestMarkdownContext(
@@ -688,7 +688,7 @@ export function PullRequestDetailPanel({
         handoffSummary.number,
         handoffSummary.headBranch,
         detail?.headRepositoryNameWithOwner,
-        sourceControlClients.parseChangeRequestUrl(handoffSummary.url)?.link.repositoryUrl ?? null,
+        sourceControlClients.parseChangeRequestLink(handoffSummary.url)?.repositoryUrl ?? null,
       )
     : loadingCheckoutCommand;
   const branchRefsQuery = useEnvironmentQuery(
@@ -1400,6 +1400,7 @@ export function PullRequestDetailPanel({
         checks: checksStale ? [] : detail.checks,
         commentsTruncated: detail.commentsTruncated,
         inThisThread: attachTarget !== null,
+        provider: detail.provider,
       }),
     );
   };
@@ -1675,6 +1676,11 @@ export function PullRequestDetailPanel({
                     preferAutoMerge={checksState !== null && checksState !== "passing"}
                     autoMergeArmed={stackAutoMerge && autoMergeArmed}
                     canCancelAutoMerge={stackAutoMerge && can("disable-auto-merge")}
+                    mergeRebasesAbove={
+                      // Servers from before `stackMergeRebasesAbove` knew GitHub as the one host
+                      // that does. Drop the fallback once clients stop supporting such servers.
+                      detail.capabilities.stackMergeRebasesAbove ?? detail.provider === "github"
+                    }
                     onActed={() => {
                       refreshDetail();
                       onActed?.();

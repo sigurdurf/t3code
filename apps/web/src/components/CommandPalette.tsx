@@ -1747,7 +1747,17 @@ function OpenCommandPaletteDialog(props: {
     actionItems.push({
       kind: "action",
       value: "action:issues",
-      searchTerms: ["issues", "issue", "bugs", "tracker", "github", "triage"],
+      searchTerms: [
+        "issues",
+        "issue",
+        "bugs",
+        "tracker",
+        "triage",
+        // A host reads issue links exactly where its server has an issue tracker.
+        ...sourceControlClients.definitions.flatMap((definition) =>
+          definition.parseIssueUrl === undefined ? [] : [definition.label],
+        ),
+      ],
       title: gt("Open issues"),
       icon: <IssueGlyph.issue className={ITEM_ICON_CLASS} />,
       run: async () => {

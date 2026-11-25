@@ -20,6 +20,7 @@ import {
   type PullRequestRef,
   type PullRequestStack,
   type PullRequestSummary,
+  type RepositoryIdentity,
   type ThreadPullRequestKey,
   type ThreadPullRequestLink,
   type ThreadPullRequestSnapshot,
@@ -34,6 +35,7 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as Queue from "effect/Queue";
 import * as Ref from "effect/Ref";
 import { ChildProcessSpawner } from "effect/process";
@@ -42,6 +44,8 @@ import { TestClock } from "effect/testing";
 import * as GitManager from "../git/GitManager.ts";
 import * as ProcessRunner from "../processRunner.ts";
 import * as PullRequestService from "../pullRequest/PullRequestService.ts";
+import * as ProjectEnrichmentService from "../project/ProjectEnrichmentService.ts";
+import * as ProjectService from "../project/ProjectService.ts";
 import * as ServerActivation from "../serverActivation.ts";
 import * as VcsProcess from "../vcs/VcsProcess.ts";
 import * as Orchestrator from "./Orchestrator.ts";
@@ -190,6 +194,7 @@ interface HarnessOptions {
     input: PullRequestRef,
   ) => Effect.Effect<PullRequestStack | null, PullRequestOperationError>;
   readonly onSync?: (command: SyncCommand) => Effect.Effect<unknown>;
+  readonly resolvedIdentities?: Readonly<Record<string, RepositoryIdentity>>;
 }
 
 const makeHarness = Effect.fn("makePullRequestSyncHarness")(function* (options: HarnessOptions) {
@@ -254,7 +259,19 @@ const makeHarness = Effect.fn("makePullRequestSyncHarness")(function* (options: 
     Layer.mock(GitManager.GitManager)({
       subscribePullRequestStateChanges: Effect.succeed(Stream.empty),
     }),
+    Layer.mock(ProjectService.ProjectService)({
+      getShell: (projectId) =>
+        Ref.get(snapshots).pipe(
+          Effect.map((snapshot) =>
+            Option.fromUndefinedOr(snapshot.projects.find((project) => project.id === projectId)),
+          ),
+        ),
+    }),
+    Layer.mock(ProjectEnrichmentService.ProjectEnrichmentService)({
+      readRepositoryIdentity: (root) => Effect.succeed(options.resolvedIdentities?.[root] ?? null),
+    }),
     Layer.mock(ProjectionStore.ProjectionStoreV2)({
+      getThreadShell: (threadId) => Effect.succeed(v2PullRequestThread(makeThread(threadId))),
       getThreadsWithPullRequests: (threadId) =>
         Queue.offer(snapshotReads, undefined).pipe(
           Effect.andThen(Ref.get(snapshots)),
@@ -538,6 +555,24 @@ const linksFrom = Effect.fn("linksFrom")(function* (
   yield* reactor.drain;
   return yield* Ref.get(fixture.linkCommands);
 });
+
+const GICE_PROJECT: OrchestrationProjectShell = {
+  ...makeProject(),
+  repositoryIdentity: {
+    canonicalKey: "git.example.com/owner/repository",
+    locator: {
+      source: "git-remote",
+      remoteName: "origin",
+      remoteUrl: "git@git.example.com:owner/repository.git",
+    },
+    displayName: "owner/repository",
+    provider: SourceControlProviderKind.make("gice"),
+  },
+};
+
+/** What `gice pr create` prints. */
+const GICE_CREATED = (number: number, host: string) =>
+  `Created pull request #${number} in owner/repository: Fix the thing (feature -> main)\nhttps://${host}/owner/repository/pulls/${number}\n`;
 
 const mergingSnapshot = () =>
   makeSnapshot([makeThread(MERGING_THREAD, { pullRequests: [makeLink(7, { state: "open" })] })]);
@@ -2247,6 +2282,26 @@ describe("PullRequestSyncReactor", () => {
       linked: [3],
     },
     {
+      name: "a Gice pull request on the project's server, not named after Gice",
+      input: 'gice pr create -t "Fix the thing" --push',
+      output: GICE_CREATED(5, "git.example.com"),
+      project: GICE_PROJECT,
+      linked: [5],
+    },
+    {
+      name: "a Gice create's URL on a server no project says is Gice",
+      input: 'gice pr create -t "Fix the thing"',
+      output: GICE_CREATED(5, "git.example.com"),
+      linked: [],
+    },
+    {
+      name: "another server's pull request printed beside a Gice create",
+      input: 'gice pr create -t "Fix the thing" > /dev/null; ./notify-reviewers',
+      output: "https://code.example.org/owner/repository/pulls/4\n",
+      project: GICE_PROJECT,
+      linked: [],
+    },
+    {
       name: "a new pull request whose number appears in the create command",
       input: "timeout 60 gh pr create --fill",
       output: "https://github.com/owner/repository/pull/60",
@@ -2309,6 +2364,43 @@ describe("PullRequestSyncReactor", () => {
       linked: [],
     },
     {
+      name: "a Gice create in a multi-repository project with a tracked Gice folder",
+      input: 'gice pr create -t "Fix the thing"',
+      output: GICE_CREATED(19, "git.example.com"),
+      project: {
+        ...makeProject(),
+        repositoryIdentity: null,
+        trackedFolders: [{ path: "/workspace/api", name: "api", discovered: true }],
+        trackedRepositoryIdentities: [GICE_PROJECT.repositoryIdentity!],
+      },
+      linked: [19],
+    },
+    {
+      name: "a Gice create on the project's server before the shell has its identity",
+      input: 'gice pr create -t "Fix the thing" --push',
+      output: GICE_CREATED(5, "git.example.com"),
+      resolved: { [GICE_PROJECT.workspaceRoot]: GICE_PROJECT.repositoryIdentity! },
+      linked: [5],
+    },
+    {
+      name: "a Gice create before the shell has a tracked folder's identity",
+      input: 'gice pr create -t "Fix the thing"',
+      output: GICE_CREATED(19, "git.example.com"),
+      project: {
+        ...makeProject(),
+        repositoryIdentity: null,
+        trackedFolders: [{ path: "/workspace/api", name: "api", discovered: true }],
+      },
+      resolved: { "/workspace/api": GICE_PROJECT.repositoryIdentity! },
+      linked: [19],
+    },
+    {
+      name: "a Gice create beside a command that lists other pull requests",
+      input: 'gice pr list && gice pr create -t "Fix the thing" > /dev/null',
+      output: "https://git.example.com/owner/repository/pulls/4",
+      linked: [],
+    },
+    {
       name: "another host's URL beside a create command",
       input: "gh pr create --fill",
       output: "https://gitlab.com/owner/repository/-/merge_requests/3",
@@ -2321,10 +2413,21 @@ describe("PullRequestSyncReactor", () => {
       output: "https://github.com/owner/repository/pull/120",
       linked: [],
     },
-  ])("links what the command created: $name", ({ input, output, linked }) =>
+  ] as ReadonlyArray<{
+    readonly name: string;
+    readonly input: string;
+    readonly output: string;
+    readonly project?: OrchestrationProjectShell;
+    /** What enrichment resolves once git answers, for a folder the shell has no identity for. */
+    readonly resolved?: Readonly<Record<string, RepositoryIdentity>>;
+    readonly linked: ReadonlyArray<number>;
+  }>)("links what the command created: $name", ({ input, output, project, resolved, linked }) =>
     Effect.gen(function* () {
       yield* TestClock.setTime(Date.parse(NOW));
-      const fixture = yield* makeHarness({ snapshot: mergingSnapshot() });
+      const fixture = yield* makeHarness({
+        snapshot: { ...mergingSnapshot(), projects: [project ?? makeProject()] },
+        ...(resolved === undefined ? {} : { resolvedIdentities: resolved }),
+      });
 
       yield* Effect.gen(function* () {
         const reactor = yield* startAndSweep(fixture);

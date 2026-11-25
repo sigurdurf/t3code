@@ -52,6 +52,9 @@
   "eb0f60ef4f92ab7d": "Install {fj} 0.6 or later from {fjUrl} and run {fjLogin}, or install {tea} 0.16 or later from {teaUrl} and run {teaLogin} for each Forgejo or Gitea server.",
   "d026a85e2e50e675": "Install the GitCafe CLI with {install}, then run {login}, save a token in Settings, or set {variable} on the server.",
   "22d3c0c48a34b5b3": "Install the TanStack Source CLI with {install}, then run {login}, save a token in Settings, or set {variable} on the server.",
+  "645cd6e4214f49bc": "Sign in to your Gice server or save an access token in Settings, set {host} and {token} on the server, or run {login}.",
+  "7b09564f31eb8171": "read and write access to pull requests and contents",
+  "2c5e89f5b1893017": "repo:write, issues:write, and workflows:write scopes",
   "756c80ad262ef315": "Waiting in the original thread",
   "d8df14f9905f38eb": "Sent",
   "e7c59185f8ab3987": "Not sent",
@@ -7057,6 +7060,7 @@
   "d4bfcdc6bb7676a3": "{count, plural, one {Merge {count} {term, select, mr {merge request} cr {change request} other {pull request}}?} other {Merge {count} {term, select, mr {merge requests} cr {change requests} other {pull requests}}?}}",
   "b9f2a24a3757f6c9": "{count, plural, one {Rebase {count} {term, select, mr {merge request} cr {change request} other {pull request}}?} other {Rebase {count} {term, select, mr {merge requests} cr {change requests} other {pull requests}}?}}",
   "d1bcf19eb2753fff": "Merge #{number} and its unmerged layers below into {base} using {method}. {host} checks their rules before merging or queueing them and rebases the remaining stack after merging.",
+  "313aa73c12a8be38": "Merge #{number} and its unmerged layers below into {base} using {method}. {host} checks their rules before merging them.",
   "31d2f22f5a282719": "Rebase the remote branches from bottom to top onto {base}. This rewrites branch history and may restart checks. If a layer fails, earlier updates remain.",
   "a0adf78733c368ae": "Merge stack",
   "140dc384c58b74f3": "Rebase stack",
@@ -10838,22 +10842,24 @@
   ],
   "b53527a02b031077": "Clipboard API is unavailable while copying sign-in code.",
   "a9a5c6fe0166c0e3": "Failed to copy sign-in code to the clipboard.",
-  "f18f93cf2941bfc3": "Signed-in GitHub account",
+  "57700bc8fd922517": "Signed-in {host} account",
   "f7b3ac7ea71b2a41": "Show account",
   "8de5a4366b58bdba": "Hide account",
   "362486999f207b7d": "Signed in, but the token saved below is used while it can be read.",
   "9e8db85a88bbfa4a": "Signed in",
-  "4e4ab7e39d3cb684": "Approve the app on GitHub to finish signing in.",
-  "154b0a0947b7f831": "A far higher GitHub API rate limit than a personal token or gh login.",
-  "e860c536bb9cad2d": "Sign in with GitHub",
-  "c97e21dd6897fa79": [
-    "Signed in as",
+  "9bf7875495e7309e": "Approve the app on {host} to finish signing in.",
+  "196d72d647eed45e": "A far higher {host} API rate limit than a personal token or CLI login.",
+  "2f68fd4677b789af": "Sign in with {host}",
+  "7722fb4a8bc7b360": "Sign in to your {host} server in the browser, with no token to create or paste.",
+  "b4c93ac0a00ab769": "{host} server address",
+  "c9a117a70e138c42": [
+    "Copy code & open ",
     {
-      "t": "RedactedSensitiveText",
-      "i": 1
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
     }
   ],
-  "a9d6996c73500a5c": "Copy code & open GitHub",
   "4b4a237faa5c3ded": [
     "Waiting for approval · code expires at ",
     {
@@ -10862,9 +10868,54 @@
       "v": "v"
     }
   ],
+  "f2d5e7b16e6274fa": [
+    "Approve only if ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " shows this code, and type the part of it the page asks for. On another device, go to ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "."
+  ],
+  "6d9a8f08323c1e9d": [
+    "Asks for ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    ". ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " explains each before you approve."
+  ],
+  "c97e21dd6897fa79": [
+    "Signed in as",
+    {
+      "t": "RedactedSensitiveText",
+      "i": 1
+    }
+  ],
   "795283fe03fcfac4": "Reaches repositories in accounts and organizations that installed the app.",
   "834dced9a4651f60": "Install on an organization",
-  "d15cc7522e8d9637": "Manage on GitHub",
+  "ae342d2dde02dd31": [
+    "Manage on ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "32111e0efc4c768e": "Sign in again",
   "719fdde2cc71cced": "Authenticated",
   "d6845667c3278af2": "Not authenticated",
   "7813f10f3f534004": "Status unknown",
@@ -10953,7 +11004,6 @@
   "76a2280b1b70b042": "Or use your own credentials",
   "027d70661a6fc7ac": "Rescan Git and hosting integrations",
   "847dfcd39ed0f9a5": "Connect an environment to inspect its version control tools and hosting integrations.",
-  "7b09564f31eb8171": "read and write access to pull requests and contents",
   "8dd881ec9fd8c074": "{host} token",
   "4f7ff2645d23d463": "No token saved; the server uses {envVar} or the {cliName} login.",
   "8ea7a295f2739627": "Saved for {hosts}.",

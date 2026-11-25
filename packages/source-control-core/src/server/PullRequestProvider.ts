@@ -205,6 +205,8 @@ export interface ProviderBatchedChangeRequestPage {
    * omission rather than an empty answer, so the caller reads each on its own.
    */
   readonly unresolved?: ReadonlyArray<string>;
+  /** As `ProviderChangeRequestPage.resumeAfter`, for the next read of the same repositories. */
+  readonly resumeAfter?: string;
 }
 
 /** A check as the change request's checks name it; the host finds its log or run from the URL. */
@@ -389,6 +391,12 @@ export interface PullRequestProviderApi {
   /** Concurrent summary reads share requests, so callers may keep many in flight. */
   readonly batchesReads?: boolean;
   /**
+   * `getChangeRequest` reads the checks `getChangeRequestChecks` would, so a detail read answers
+   * for both; `when-found` where a failed checks read leaves the detail without any. Absent means
+   * a detail's checks never stand in for a checks read.
+   */
+  readonly detailChecks?: "complete" | "when-found";
+  /**
    * Absent means every host detected as this kind is read. A host it refuses is listed as one that
    * cannot be browsed here, and nothing is sent for it.
    */
@@ -546,7 +554,12 @@ export interface PullRequestProviderApi {
   readonly setFilesViewed?: (
     input: ProviderRepositoryRef & {
       readonly number: number;
-      readonly files: ReadonlyArray<{ readonly path: string; readonly viewed: boolean }>;
+      readonly files: ReadonlyArray<{
+        readonly path: string;
+        readonly viewed: boolean;
+        /** The file's version in the diff the reader was shown, as the diff names it. */
+        readonly revision?: string | undefined;
+      }>;
     },
   ) => Effect.Effect<void, PullRequestProviderError>;
 

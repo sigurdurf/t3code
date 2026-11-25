@@ -12,13 +12,7 @@ export function PullRequestContextDetails({ metadata }: { metadata: PullRequestC
   const gt = useGT();
   const messages = useMessages();
   const state = resolvePullRequestState(metadata, messages);
-  // A context chip carries the change request's URL alone, so the URL names its host.
-  const term = changeRequestTermKind(
-    (
-      sourceControlClients.findByChangeRequestUrl(metadata.url) ??
-      sourceControlClients.get(undefined)
-    ).changeRequest,
-  );
+  const term = changeRequestTermKind(sourceControlClients.changeRequestTerminology(metadata.url));
   return (
     <div className="max-w-80 space-y-1 overflow-hidden py-0.5 text-left">
       <div className="flex items-center gap-1.5 text-xs font-medium">

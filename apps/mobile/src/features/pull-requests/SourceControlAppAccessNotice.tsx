@@ -27,6 +27,8 @@ export function SourceControlAppAccessNotice(props: {
   const { presentation } = useEnvironmentPresentation(environmentId);
   const definition = props.provider ? sourceControlClients.find(props.provider) : undefined;
   const appSignIn = definition?.credentials?.appSignIn;
+  // Only an app installed per account or organization can miss a repository.
+  const installUrl = appSignIn?.installUrl;
   const host = (props.host ?? definition?.publicHost ?? "").toLowerCase();
   const settings = presentation?.serverConfig?.settings;
   const signedIn =
@@ -34,14 +36,18 @@ export function SourceControlAppAccessNotice(props: {
     settings !== undefined &&
     (readHostCredentialSettings(settings, definition.kind).signIns[host] ?? "").length > 0;
   const access = useEnvironmentQuery(
-    definition !== undefined && appSignIn?.hosts.includes(host) && signedIn
+    definition !== undefined &&
+      installUrl !== undefined &&
+      appSignIn?.hosts?.includes(host) &&
+      signedIn
       ? sourceControlEnvironment.appAccess({
           environmentId,
           input: { provider: definition.kind, host, repository: props.repository },
         })
       : null,
   );
-  if (appSignIn === undefined || access.data?.status !== "not-covered") return null;
+  if (appSignIn === undefined || installUrl === undefined || access.data?.status !== "not-covered")
+    return null;
   const owner = props.repository.split("/")[0] ?? props.repository;
 
   return (
@@ -54,7 +60,7 @@ export function SourceControlAppAccessNotice(props: {
       </Text>
       <Pressable
         accessibilityRole="link"
-        onPress={() => void tryOpenExternalUrl(appSignIn.installUrl, "provider-auth")}
+        onPress={() => void tryOpenExternalUrl(installUrl, "provider-auth")}
       >
         <Text className="text-sm font-t3-bold text-foreground">
           <T>

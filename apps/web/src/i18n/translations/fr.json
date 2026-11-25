@@ -52,6 +52,9 @@
   "eb0f60ef4f92ab7d": "Installez {fj} 0.6 ou version ultérieure depuis {fjUrl} et exécutez {fjLogin}, ou installez {tea} 0.16 ou version ultérieure depuis {teaUrl} et exécutez {teaLogin} pour chaque serveur Forgejo ou Gitea.",
   "d026a85e2e50e675": "Installez la CLI GitCafe avec {install}, puis exécutez {login}, enregistrez un jeton dans Paramètres ou définissez {variable} sur le serveur.",
   "22d3c0c48a34b5b3": "Installez la CLI TanStack Source avec {install}, puis exécutez {login}, enregistrez un jeton dans Paramètres ou définissez {variable} sur le serveur.",
+  "645cd6e4214f49bc": "Connectez-vous à votre serveur Gice ou enregistrez un jeton d’accès dans Paramètres, définissez {host} et {token} sur le serveur ou exécutez {login}.",
+  "7b09564f31eb8171": "accès en lecture et en écriture aux pull requests et au contenu",
+  "2c5e89f5b1893017": "les portées repo:write, issues:write et workflows:write",
   "756c80ad262ef315": "En attente dans le fil d'origine",
   "d8df14f9905f38eb": "Envoyé",
   "e7c59185f8ab3987": "Non envoyé",
@@ -7051,6 +7054,7 @@
   "d4bfcdc6bb7676a3": "{count, plural, one {Fusionner {count} {term, select, mr {merge request} cr {demande de modification} other {pull request}} ?} other {Fusionner {count} {term, select, mr {merge requests} cr {demandes de modification} other {pull requests}} ?}}",
   "b9f2a24a3757f6c9": "{count, plural, one {Faire le rebase de {count} {term, select, mr {merge request} cr {demande de modification} other {pull request}} ?} other {Faire le rebase de {count} {term, select, mr {merge requests} cr {demandes de modification} other {pull requests}} ?}}",
   "d1bcf19eb2753fff": "Fusionner #{number} et ses couches non fusionnées inférieures dans {base} avec {method}. {host} vérifie leurs règles avant de les fusionner ou de les mettre en file d’attente, puis fait le rebase du reste de la pile après la fusion.",
+  "313aa73c12a8be38": "Fusionner #{number} et ses couches non fusionnées inférieures dans {base} avec {method}. {host} vérifie leurs règles avant de les fusionner.",
   "31d2f22f5a282719": "Faire le rebase des branches distantes de bas en haut sur {base}. Cela réécrit l’historique des branches et peut relancer les checks. Si une couche échoue, les mises à jour précédentes restent en place.",
   "a0adf78733c368ae": "Fusionner la pile",
   "140dc384c58b74f3": "Rebase de la pile",
@@ -10828,22 +10832,24 @@
   ],
   "b53527a02b031077": "L’API Presse-papiers n’est pas disponible pour copier le code de connexion.",
   "a9a5c6fe0166c0e3": "Impossible de copier le code de connexion dans le presse-papiers.",
-  "f18f93cf2941bfc3": "Compte GitHub connecté",
+  "57700bc8fd922517": "Compte {host} connecté",
   "f7b3ac7ea71b2a41": "Afficher le compte",
   "8de5a4366b58bdba": "Masquer le compte",
   "362486999f207b7d": "Connecté, mais le jeton enregistré ci-dessous est utilisé tant qu’il peut être lu.",
   "9e8db85a88bbfa4a": "Connecté",
-  "4e4ab7e39d3cb684": "Approuvez l’app sur GitHub pour terminer la connexion.",
-  "154b0a0947b7f831": "Une limite de débit de l’API GitHub bien plus élevée qu’avec un jeton personnel ou gh login.",
-  "e860c536bb9cad2d": "Se connecter avec GitHub",
-  "c97e21dd6897fa79": [
-    "Connecté en tant que ",
+  "9bf7875495e7309e": "Approuvez l’app sur {host} pour terminer la connexion.",
+  "196d72d647eed45e": "Une limite de débit de l’API {host} bien plus élevée qu’avec un jeton personnel ou une connexion CLI.",
+  "2f68fd4677b789af": "Se connecter avec {host}",
+  "7722fb4a8bc7b360": "Connectez-vous à votre serveur {host} dans le navigateur, sans jeton à créer ni à coller.",
+  "b4c93ac0a00ab769": "Adresse du serveur {host}",
+  "c9a117a70e138c42": [
+    "Copier le code et ouvrir ",
     {
-      "t": "RedactedSensitiveText",
-      "i": 1
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
     }
   ],
-  "a9d6996c73500a5c": "Copier le code et ouvrir GitHub",
   "4b4a237faa5c3ded": [
     "En attente d’approbation · le code expire à ",
     {
@@ -10852,9 +10858,54 @@
       "v": "v"
     }
   ],
+  "f2d5e7b16e6274fa": [
+    "N’approuvez que si ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " affiche ce code, et saisissez la partie que la page demande. Sur un autre appareil, allez sur ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "."
+  ],
+  "6d9a8f08323c1e9d": [
+    "Demande ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    ". ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " explique chacun avant que vous approuviez."
+  ],
+  "c97e21dd6897fa79": [
+    "Connecté en tant que ",
+    {
+      "t": "RedactedSensitiveText",
+      "i": 1
+    }
+  ],
   "795283fe03fcfac4": "Accède aux dépôts des comptes et organisations qui ont installé l’app.",
   "834dced9a4651f60": "Installer sur une organisation",
-  "d15cc7522e8d9637": "Gérer sur GitHub",
+  "ae342d2dde02dd31": [
+    "Gérer sur ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ],
+  "32111e0efc4c768e": "Se reconnecter",
   "719fdde2cc71cced": "Authentifié",
   "d6845667c3278af2": "Non authentifié",
   "7813f10f3f534004": "Statut inconnu",
@@ -10943,7 +10994,6 @@
   "76a2280b1b70b042": "Ou utilisez vos propres identifiants",
   "027d70661a6fc7ac": "Analyser à nouveau Git et les intégrations d’hébergement",
   "847dfcd39ed0f9a5": "Connectez un environnement pour inspecter ses outils de gestion de versions et ses intégrations d’hébergement.",
-  "7b09564f31eb8171": "accès en lecture et en écriture aux pull requests et au contenu",
   "8dd881ec9fd8c074": "Jeton {host}",
   "4f7ff2645d23d463": "Aucun jeton enregistré ; le serveur utilise {envVar} ou l’identifiant {cliName}.",
   "8ea7a295f2739627": "Enregistré pour {hosts}.",

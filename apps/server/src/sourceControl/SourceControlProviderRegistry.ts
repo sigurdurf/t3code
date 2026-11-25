@@ -359,7 +359,15 @@ export const makeWithProviders = Effect.fn("makeSourceControlProviderRegistryWit
         if (input.url.protocol !== "https:" || input.url.username || input.url.password) {
           return undefined;
         }
-        const kind = sourceControlDefinitions.recognizeRemote(input.url.href)?.kind;
+        const recognized = sourceControlDefinitions.recognizeRemote(input.url.href)?.kind;
+        // A server whose name says nothing is known by the checkout detected on it.
+        const projectServer = URL.parse(input.context?.provider.baseUrl ?? "")?.host;
+        const kind =
+          recognized !== undefined && recognized !== "unknown"
+            ? recognized
+            : projectServer === input.url.host
+              ? input.context?.provider.kind
+              : undefined;
         return kind ? providers.get(kind)?.resolveLink?.(input) : undefined;
       },
       get,

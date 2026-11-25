@@ -37,6 +37,7 @@ import { useShortcutModifierState } from "~/shortcutModifierState";
 import { useProjects, useServerConfigs, useThreadShell } from "~/state/entities";
 import { PullRequestChangeBreakdownStat } from "./PullRequestChangeBreakdownStat";
 import { PullRequestsUnavailableState } from "./PullRequestsUnavailableState";
+import { useChangeRequestHosts } from "~/state/projects";
 import { threadEnvironment } from "~/state/threads";
 import { useAtomCommand } from "~/state/use-atom-command";
 import { RelativeTime } from "~/components/RelativeTime";
@@ -125,8 +126,9 @@ function LinkRowImpl({
   const snapshot = link.snapshot;
   const open = snapshot === null || snapshot.state === "open";
   const watching = link.watch !== undefined;
+  const hosts = useChangeRequestHosts(threadRef.environmentId);
   const linkHost =
-    sourceControlClients.findByChangeRequestUrl(link.url) ?? UNKNOWN_SOURCE_CONTROL_CLIENT;
+    sourceControlClients.findByChangeRequestUrl(link.url, hosts) ?? UNKNOWN_SOURCE_CONTROL_CLIENT;
   const linkHostActions = linkHost.changeRequestActions;
   const actionEntry =
     projectId !== null && snapshot !== null && snapshot.state !== "merged"
@@ -271,7 +273,7 @@ function LinkRowImpl({
                   <TooltipPopup>
                     {stack.kind === "native"
                       ? gt("{host} stack of {size}: merging a layer lands the ones below it.", {
-                          host: sourceControlClients.hostLabelForChangeRequestUrl(link.url),
+                          host: linkHost.label,
                           size: stack.size,
                         })
                       : gt(

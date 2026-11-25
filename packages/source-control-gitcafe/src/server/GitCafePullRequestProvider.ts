@@ -38,6 +38,7 @@ const CAPABILITIES: PullRequestCapabilities = {
   stacks: true,
   stackActions: true,
   reactions: true,
+  reviewReactions: false,
   mentions: true,
   referenceSigils: [],
   labels: true,

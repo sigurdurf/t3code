@@ -180,10 +180,7 @@ export function useLinkedPullRequestActions(input: {
       void tryOpenExternalUrl(link.url, "pull-request").then((opened) => {
         if (!opened) {
           const term = changeRequestTermKind(
-            (
-              sourceControlClients.findByChangeRequestUrl(link.url) ??
-              sourceControlClients.get(undefined)
-            ).changeRequest,
+            sourceControlClients.changeRequestTerminology(link.url),
           );
           Dialog.alert(
             gt(

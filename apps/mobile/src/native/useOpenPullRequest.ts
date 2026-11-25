@@ -11,6 +11,7 @@ import { tryOpenWebLink } from "../lib/openExternalUrl";
 import { appAtomRegistry } from "../state/atom-registry";
 import { environmentServerConfigsAtom } from "../state/server";
 import { issueTrackerEnvironment } from "../state/issueTrackers";
+import { environmentProjects } from "../state/projects";
 import { composerPullRequests } from "../state/pull-requests";
 import { useAtomQueryRunner } from "../state/use-atom-query-runner";
 import { withKnownPullRequestSummary } from "../state/use-thread-pr";
@@ -60,7 +61,11 @@ export function useNavigateToPullRequest(options?: { readonly replace?: boolean 
             })
           : null;
       if (!issue || !environmentId) return tryOpenWebLink(url, "pull-request");
-      const candidate = pullRequestCandidateForIssueLink(url, issue.ref);
+      const candidate = pullRequestCandidateForIssueLink(
+        url,
+        issue.ref,
+        appAtomRegistry.get(environmentProjects.changeRequestHostsAtom(environmentId)),
+      );
       if (candidate) {
         const preview = await readPreview({ environmentId, input: candidate.target });
         if (preview._tag === "Success") {

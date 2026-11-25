@@ -48,12 +48,12 @@ function isRepositoryPath(repository: string): boolean {
 }
 
 /** Signing in through the T3 Code for GitHub app lifts the per-user API rate limit to the app's. */
-export const APP_SIGN_IN: SourceControlAppSignIn = {
+export const APP_SIGN_IN = {
   appName: "T3 Code for GitHub",
   hosts: ["github.com"],
   installUrl: "https://github.com/apps/t3-code-for-github/installations/new",
-  revokeUrl: "https://github.com/settings/apps/authorizations",
-};
+  revokeUrl: () => "https://github.com/settings/apps/authorizations",
+} satisfies SourceControlAppSignIn;
 
 export const settings = makeProviderSettingsSchema(hostCredentialSettingsFields);
 export type GitHubSettings = typeof settings.Type;
@@ -132,6 +132,7 @@ export const definition = defineSourceControl({
   changeRequestCloseCommand: /\bgh\s+(?:pr\s+(?:merge|close)|stack\s+merge)\b/u,
   // `new` is gh's alias for `create`.
   changeRequestCreateCommand: /\bgh\s+pr\s+(?:create|new)\b/u,
+  changeRequestListCommand: /\bgh\s+(?:pr\s+(?:list|status)|search\s+prs|api)\b/u,
   authorProfileUrl: (login, repositoryUrl) =>
     login.endsWith("[bot]")
       ? null

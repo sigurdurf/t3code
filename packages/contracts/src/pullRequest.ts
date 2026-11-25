@@ -304,6 +304,8 @@ export const PullRequestCapabilities = Schema.Struct({
   updateMethods: Schema.optional(ForwardCompatibleArray(PullRequestUpdateMethod)),
   search: Schema.Boolean,
   reactions: Schema.optional(Schema.Boolean),
+  /** Review summaries take reactions as other comments do; only read where `reactions` is set. */
+  reviewReactions: Schema.optional(Schema.Boolean),
   viewedFiles: Schema.optional(PullRequestViewedFilesStore),
   review: PullRequestReviewCapabilities,
   reviewers: PullRequestReviewerCapabilities,
@@ -312,6 +314,8 @@ export const PullRequestCapabilities = Schema.Struct({
   stackActions: Schema.optional(Schema.Boolean),
   /** Stack actions also arm and cancel auto-merge for a layer and the open layers below it. */
   stackAutoMerge: Schema.optional(Schema.Boolean),
+  /** A stack merge rebases the layers left above it onto the base it merged into. */
+  stackMergeRebasesAbove: Schema.optional(Schema.Boolean),
   labels: Schema.optional(Schema.Boolean),
   /** The host searches the repository's users, so composers can complete `@login`. */
   mentions: Schema.optional(Schema.Boolean),

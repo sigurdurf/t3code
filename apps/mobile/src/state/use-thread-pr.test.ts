@@ -1,9 +1,11 @@
 import {
+  EnvironmentId,
   ProjectId,
   type PullRequestSummary,
   SourceControlProviderKind,
   type ThreadPullRequestLink,
 } from "@t3tools/contracts";
+import { NO_CHANGE_REQUEST_HOSTS } from "@t3tools/client-runtime/source-control-clients";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -125,6 +127,7 @@ describe("knownPullRequestSummary", () => {
     const link = linkedPr(7);
     const threads = [
       {
+        environmentId: EnvironmentId.make("environment"),
         projectId,
         pullRequests: [
           { ...link, snapshot: { ...link.snapshot!, updatedAt: "2026-09-08T00:00:00.000Z" } },
@@ -144,7 +147,12 @@ describe("knownPullRequestSummary", () => {
       updatedAt: "2026-09-09T00:00:00.000Z",
     };
     const lookup = (host: string, number: number, summaries = [listed]) =>
-      knownPullRequestSummary({ host, repository: "t3tools/t3code", number }, threads, summaries);
+      knownPullRequestSummary(
+        { host, repository: "t3tools/t3code", number },
+        threads,
+        summaries,
+        () => NO_CHANGE_REQUEST_HOSTS,
+      );
 
     expect(lookup("github.com", 7, [])?.title).toBe("Change 7");
     expect(lookup("github.com", 7)?.title).toBe("Listed title");

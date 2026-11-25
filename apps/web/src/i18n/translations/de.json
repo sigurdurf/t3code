@@ -52,6 +52,9 @@
   "eb0f60ef4f92ab7d": "Installiere {fj} 0.6 oder neuer von {fjUrl} und führe {fjLogin} aus, oder installiere {tea} 0.16 oder neuer von {teaUrl} und führe {teaLogin} für jeden Forgejo- oder Gitea-Server aus.",
   "d026a85e2e50e675": "Installiere die GitCafe CLI mit {install} und führe dann {login} aus, speichere ein Token in den Einstellungen oder setze {variable} auf dem Server.",
   "22d3c0c48a34b5b3": "Installiere die TanStack Source CLI mit {install} und führe dann {login} aus, speichere ein Token in den Einstellungen oder setze {variable} auf dem Server.",
+  "645cd6e4214f49bc": "Melde dich bei deinem Gice-Server an oder speichere ein Zugriffstoken in den Einstellungen, setze {host} und {token} auf dem Server oder führe {login} aus.",
+  "7b09564f31eb8171": "Lese- und Schreibzugriff auf Pull Requests und Inhalte",
+  "2c5e89f5b1893017": "die Scopes repo:write, issues:write und workflows:write",
   "756c80ad262ef315": "Wartet im ursprünglichen Thread",
   "d8df14f9905f38eb": "Gesendet",
   "e7c59185f8ab3987": "Nicht gesendet",
@@ -7051,6 +7054,7 @@
   "d4bfcdc6bb7676a3": "{count, plural, one {{count} {term, select, mr {Merge Request} cr {Änderungsanfrage} other {Pull Request}} mergen?} other {{count} {term, select, mr {Merge Requests} cr {Änderungsanfragen} other {Pull Requests}} mergen?}}",
   "b9f2a24a3757f6c9": "{count, plural, one {{count} {term, select, mr {Merge Request} cr {Änderungsanfrage} other {Pull Request}} rebasen?} other {{count} {term, select, mr {Merge Requests} cr {Änderungsanfragen} other {Pull Requests}} rebasen?}}",
   "d1bcf19eb2753fff": "#{number} und die darunterliegenden nicht gemergten Ebenen per {method} in {base} mergen. {host} prüft ihre Regeln, bevor sie gemergt oder eingereiht werden, und rebased nach dem Mergen den restlichen Stack.",
+  "313aa73c12a8be38": "#{number} und die darunterliegenden nicht gemergten Ebenen per {method} in {base} mergen. {host} prüft ihre Regeln, bevor sie gemergt werden.",
   "31d2f22f5a282719": "Die Remote-Branches von unten nach oben auf {base} rebasen. Das schreibt die Branch-Historie um und kann Checks neu starten. Schlägt eine Ebene fehl, bleiben frühere Aktualisierungen bestehen.",
   "a0adf78733c368ae": "Stack mergen",
   "140dc384c58b74f3": "Stack rebasen",
@@ -10829,22 +10833,25 @@
   ],
   "b53527a02b031077": "Die Zwischenablage-API ist beim Kopieren des Anmeldecodes nicht verfügbar.",
   "a9a5c6fe0166c0e3": "Der Anmeldecode konnte nicht in die Zwischenablage kopiert werden.",
-  "f18f93cf2941bfc3": "Angemeldetes GitHub-Konto",
+  "57700bc8fd922517": "Angemeldetes {host}-Konto",
   "f7b3ac7ea71b2a41": "Konto anzeigen",
   "8de5a4366b58bdba": "Konto ausblenden",
   "362486999f207b7d": "Angemeldet, aber das unten gespeicherte Token wird verwendet, solange es lesbar ist.",
   "9e8db85a88bbfa4a": "Angemeldet",
-  "4e4ab7e39d3cb684": "Genehmige die App auf GitHub, um die Anmeldung abzuschließen.",
-  "154b0a0947b7f831": "Ein deutlich höheres GitHub-API-Ratenlimit als ein persönliches Token oder gh login.",
-  "e860c536bb9cad2d": "Mit GitHub anmelden",
-  "c97e21dd6897fa79": [
-    "Angemeldet als",
+  "9bf7875495e7309e": "Genehmige die App auf {host}, um die Anmeldung abzuschließen.",
+  "196d72d647eed45e": "Ein deutlich höheres {host}-API-Ratenlimit als ein persönliches Token oder eine CLI-Anmeldung.",
+  "2f68fd4677b789af": "Mit {host} anmelden",
+  "7722fb4a8bc7b360": "Melde dich im Browser bei deinem {host}-Server an, ohne ein Token zu erstellen oder einzufügen.",
+  "b4c93ac0a00ab769": "Adresse des {host}-Servers",
+  "c9a117a70e138c42": [
+    "Code kopieren & ",
     {
-      "t": "RedactedSensitiveText",
-      "i": 1
-    }
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " öffnen"
   ],
-  "a9d6996c73500a5c": "Code kopieren & GitHub öffnen",
   "4b4a237faa5c3ded": [
     "Warte auf Genehmigung · Code läuft um ",
     {
@@ -10854,9 +10861,55 @@
     },
     " ab"
   ],
+  "f2d5e7b16e6274fa": [
+    "Genehmige nur, wenn ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " diesen Code zeigt, und gib den Teil davon ein, nach dem die Seite fragt. Auf einem anderen Gerät öffne ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    "."
+  ],
+  "6d9a8f08323c1e9d": [
+    "Fordert ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " an. ",
+    {
+      "i": 2,
+      "k": "_gt_value_2",
+      "v": "v"
+    },
+    " erklärt alles, bevor du genehmigst."
+  ],
+  "c97e21dd6897fa79": [
+    "Angemeldet als",
+    {
+      "t": "RedactedSensitiveText",
+      "i": 1
+    }
+  ],
   "795283fe03fcfac4": "Erreicht Repositorys in Konten und Organisationen, die die App installiert haben.",
   "834dced9a4651f60": "In einer Organisation installieren",
-  "d15cc7522e8d9637": "Auf GitHub verwalten",
+  "ae342d2dde02dd31": [
+    "Auf ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " verwalten"
+  ],
+  "32111e0efc4c768e": "Erneut anmelden",
   "719fdde2cc71cced": "Authentifiziert",
   "d6845667c3278af2": "Nicht authentifiziert",
   "7813f10f3f534004": "Status unbekannt",
@@ -10944,7 +10997,6 @@
   "76a2280b1b70b042": "Oder eigene Anmeldedaten verwenden",
   "027d70661a6fc7ac": "Git- und Hosting-Integrationen erneut scannen",
   "847dfcd39ed0f9a5": "Verbinde eine Umgebung, um ihre Versionskontroll-Tools und Hosting-Integrationen zu untersuchen.",
-  "7b09564f31eb8171": "Lese- und Schreibzugriff auf Pull Requests und Inhalte",
   "8dd881ec9fd8c074": "{host}-Token",
   "4f7ff2645d23d463": "Kein Token gespeichert; der Server verwendet {envVar} oder die {cliName}-Anmeldung.",
   "8ea7a295f2739627": "Gespeichert für {hosts}.",

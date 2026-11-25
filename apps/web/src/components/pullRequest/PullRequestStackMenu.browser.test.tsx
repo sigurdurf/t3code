@@ -68,6 +68,7 @@ it.each([
         preferAutoMerge={false}
         autoMergeArmed={false}
         canCancelAutoMerge={false}
+        mergeRebasesAbove
         mergeMethod="squash"
         onActed={() => {}}
       />

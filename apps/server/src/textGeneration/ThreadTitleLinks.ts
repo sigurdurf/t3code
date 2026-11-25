@@ -1,6 +1,7 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as SourceControlProviderRegistry from "../sourceControl/SourceControlProviderRegistry.ts";
+import { sourceControlDefinitions } from "../sourceControl/sourceControlDefinitions.ts";
 
 const encodeSubject = Schema.encodeEffect(
   Schema.fromJsonString(Schema.Struct({ title: Schema.String, body: Schema.String })),
@@ -11,6 +12,12 @@ export const resolveThreadTitleLinks = Effect.fn("resolveThreadTitleLinks")(func
   cwd: string;
 }) {
   const providers = yield* SourceControlProviderRegistry.SourceControlProviderRegistry;
+  const context = yield* Effect.cached(
+    providers.resolveHandle({ cwd: input.cwd }).pipe(
+      Effect.map((handle) => handle.context),
+      Effect.orElseSucceed(() => null),
+    ),
+  );
   const links = new Map<string, NonNullable<ReturnType<typeof providers.resolveLink>>>();
   for (const match of input.message.matchAll(/https:\/\/[^\s<>"')\]`]+/g)) {
     const candidate = match[0].replace(/[.,:;!?*]+$/, "");
@@ -19,7 +26,13 @@ export const resolveThreadTitleLinks = Effect.fn("resolveThreadTitleLinks")(func
     url.hash = "";
     url.search = "";
     if (links.has(url.href)) continue;
-    const lookup = providers.resolveLink({ cwd: input.cwd, url });
+    // Only a server whose name says nothing is read by the checkout's own host.
+    const named = sourceControlDefinitions.recognizeRemote(url.href)?.kind;
+    const lookup = providers.resolveLink({
+      cwd: input.cwd,
+      url,
+      ...(named === undefined || named === "unknown" ? { context: yield* context } : {}),
+    });
     if (!lookup) continue;
     links.set(url.href, lookup);
     if (links.size === 2) break;

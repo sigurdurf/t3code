@@ -3382,6 +3382,93 @@ it.effect("believes a search's silence about a repository it vouches for", () =>
     );
   }),
 );
+it.effect("pages a read across repositories from where the host stopped, stacks and all", () =>
+  Effect.gen(function* () {
+    const stack = (position: number) => ({ number: 6, position, size: 2, base: "main" });
+    // Each repository's rows, newest first. The host leaves acme/api to its own read, as Gice
+    // does a repository whose stacks it did not work out.
+    const held: Record<string, ReadonlyArray<ProviderChangeRequest>> = {
+      "acme/web": [
+        { ...changeRequest(6, "2026-07-06T00:00:00Z"), stack: stack(1) },
+        { ...changeRequest(5, "2026-07-05T00:00:00Z"), stack: stack(2) },
+        changeRequest(1, "2026-07-01T00:00:00Z"),
+      ],
+      "acme/docs": [
+        changeRequest(4, "2026-07-04T00:00:00Z"),
+        changeRequest(2, "2026-07-02T00:00:00Z"),
+      ],
+      "acme/api": [
+        changeRequest(9, "2026-07-09T00:00:00Z"),
+        changeRequest(3, "2026-07-03T00:00:00Z"),
+      ],
+    };
+    const across: Array<readonly [ReadonlyArray<string>, string | undefined]> = [];
+    const separately: Array<readonly [string, number]> = [];
+    const service = yield* makeService({
+      projects: [
+        project({ id: "p1", title: "web", workspaceRoot: "/a", repository: "acme/web" }),
+        project({ id: "p2", title: "docs", workspaceRoot: "/b", repository: "acme/docs" }),
+        project({ id: "p3", title: "api", workspaceRoot: "/c", repository: "acme/api" }),
+      ],
+      providers: [
+        fakePullRequestProvider(SourceControlProviderKind.make("github"), {
+          // Carries on below the time of the last row it handed over.
+          listChangeRequestsAcross: ({ repositories, cursor, limit }) => {
+            across.push([repositories, cursor?.resumeAfter]);
+            const after = cursor?.resumeAfter;
+            const rows = repositories
+              .flatMap((repository) =>
+                (held[repository] ?? []).map((item) => ({ ...item, repository })),
+              )
+              .toSorted((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+              .filter((item) => after === undefined || item.updatedAt < after);
+            const page = rows.slice(0, limit);
+            return Effect.succeed({
+              items: page.filter((item) => item.repository !== "acme/api"),
+              truncated: rows.length > limit,
+              ...(rows.length > limit ? { resumeAfter: page.at(-1)!.updatedAt } : {}),
+              ...(repositories.includes("acme/api") ? { unresolved: ["acme/api"] } : {}),
+            });
+          },
+          listChangeRequests: ({ repository, cursor, limit }) => {
+            const offset = cursor?.delivered ?? 0;
+            separately.push([repository, offset]);
+            const rows = (held[repository] ?? []).slice(offset, offset + limit);
+            return Effect.succeed({
+              items: rows,
+              truncated: offset + rows.length < (held[repository] ?? []).length,
+              continues: true,
+              cursorAdvance: rows.length,
+            });
+          },
+        }),
+      ],
+    });
+
+    const first = yield* service.list({ state: "open", limit: 3 });
+    const second = yield* service.list({ state: "open", limit: 3, cursors: first.nextCursors });
+
+    assert.deepStrictEqual(
+      first.entries.map((entry) => [entry.number, entry.stack]),
+      [
+        [9, undefined],
+        [6, stack(1)],
+        [5, stack(2)],
+        [3, undefined],
+      ],
+    );
+    assert.deepStrictEqual(
+      second.entries.map((entry) => entry.number),
+      [4, 2, 1],
+    );
+    assert.deepStrictEqual(across, [
+      [["acme/web", "acme/docs", "acme/api"], undefined],
+      [["acme/web", "acme/docs"], "2026-07-05T00:00:00Z"],
+    ]);
+    assert.deepStrictEqual(separately, [["acme/api", 0]]);
+    assert.deepStrictEqual(second.nextCursors, {});
+  }),
+);
 it.effect("fills in the line counts for the rows it is given", () =>
   Effect.gen(function* () {
     const asked: Array<unknown> = [];
@@ -3609,6 +3696,7 @@ it.effect("isolates routed caches for two credentials belonging to the same acco
         ],
         providers: [
           fakePullRequestProvider(SourceControlProviderKind.make("github"), {
+            detailChecks: "complete",
             capabilities: {
               ...fakePullRequestProvider(SourceControlProviderKind.make("github")).capabilities,
               viewedFiles: "host",
@@ -3874,6 +3962,7 @@ it.effect.each(["github", "azure-devops"])(
         ],
         providers: [
           fakePullRequestProvider(SourceControlProviderKind.make(provider), {
+            detailChecks: provider === "azure-devops" ? "when-found" : "complete",
             getChangeRequest: () =>
               Effect.succeed({
                 ...hostedChangeRequest("Description"),
@@ -3933,6 +4022,7 @@ it.effect("asks Azure for checks when its detail came back with none", () =>
       ],
       providers: [
         fakePullRequestProvider(SourceControlProviderKind.make("azure-devops"), {
+          detailChecks: "when-found",
           getChangeRequest: () => Effect.succeed(hostedChangeRequest("Description")),
           getChangeRequestChecks: () =>
             Effect.sync(() => {

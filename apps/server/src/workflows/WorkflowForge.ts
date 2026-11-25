@@ -309,8 +309,8 @@ export const layer = Layer.effect(
           number: pullRequest.number,
         } satisfies PullRequestRef;
       }
-      const parsed = sourceControlDefinitions.parseChangeRequestUrl(pullRequest.url)?.link;
-      if (parsed === undefined) {
+      const parsed = sourceControlDefinitions.parseChangeRequestLink(pullRequest.url);
+      if (parsed === null) {
         return yield* new WorkflowForgeError({
           reason: `${pullRequest.url} is not a pull request address.`,
         });

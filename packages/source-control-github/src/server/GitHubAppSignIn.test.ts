@@ -265,6 +265,19 @@ describe("GitHubAppSignIn", () => {
     }).pipe(Effect.provide(layer));
   });
 
+  it.effect("signs out by forgetting the session, keeping other hosts' sessions", () => {
+    const { layer, requests } = harness({
+      handle: () => ({ body: {} }),
+      signIns: { "github.com": session(), "other.example": session() },
+    });
+    return Effect.gen(function* () {
+      const signIn = yield* GitHubAppSignIn.GitHubAppSignIn;
+      yield* signIn.signOut("GitHub.com");
+      expect(Object.keys(yield* savedSignIns)).toEqual(["other.example"]);
+      expect(requests).toEqual([]);
+    }).pipe(Effect.provide(layer));
+  });
+
   it.effect("refuses hosts the app is not registered on", () => {
     const { layer, requests } = harness({ handle: () => ({ body: {} }) });
     return Effect.gen(function* () {

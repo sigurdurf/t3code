@@ -103,6 +103,7 @@ describe("add project shared logic", () => {
       ["https://gitlab.example.test/g/p/-/blob/main/src/branch/x", "/-/", "p"],
       ["https://code.company.test/g/p/-/tree/main", "/-/", "p"],
       ["https://github.com/pingdotgg/t3code/tree/release.git", "/tree/", "t3code"],
+      ["https://gice.sed.is/Gice/Gice/blob?ref=main&path=go.mod", "/blob", "Gice"],
     ] as const) {
       const cloneUrl = normalizePastedCloneUrl(pageUrl);
       expect(cloneUrl).not.toContain(pageRoute);

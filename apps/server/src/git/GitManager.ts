@@ -340,7 +340,7 @@ interface BranchHeadContext {
 }
 
 export function pullRequestRepositoryKey(value: string): string | null {
-  const repositoryUrl = sourceControlDefinitions.parseChangeRequestUrl(value)?.link.repositoryUrl;
+  const repositoryUrl = sourceControlDefinitions.parseChangeRequestLink(value)?.repositoryUrl;
   return repositoryUrl === undefined
     ? null
     : sourceControlDefinitions.repositoryKeyFromRemote(repositoryUrl);
@@ -1484,8 +1484,8 @@ export const make = Effect.gen(function* () {
   >();
   const noteLookupState = (pr: PullRequestInfo) =>
     Effect.suspend(() => {
-      const parsed = sourceControlDefinitions.parseChangeRequestUrl(pr.url)?.link;
-      if (parsed === undefined || parsed.number !== pr.number) return Effect.void;
+      const parsed = sourceControlDefinitions.parseChangeRequestLink(pr.url);
+      if (parsed === null || parsed.number !== pr.number) return Effect.void;
       const key = normalizeThreadPullRequestKey(parsed);
       const id = threadPullRequestKeyOf(key);
       const previous = lookupStates.get(id);
@@ -2838,7 +2838,7 @@ export const make = Effect.gen(function* () {
         cwd,
         baseRefName: baseBranch,
         headSelector: headContext.preferredHeadSelector,
-        ...(provider.kind === "gitlab" &&
+        ...(provider.takesSourceRepository === true &&
         headContext.isCrossRepository &&
         headContext.headRepositoryNameWithOwner
           ? {

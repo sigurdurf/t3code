@@ -1,7 +1,7 @@
 # Source control
 
-T3 Code integrates with GitHub, GitLab, Forgejo, Gitea, Bitbucket, Azure DevOps, GitCafe, and Cursor
-Origin to clone and publish repositories, create pull requests, and review changes.
+T3 Code integrates with GitHub, GitLab, Forgejo, Gitea, Bitbucket, Azure DevOps, GitCafe, Cursor
+Origin, and Gice to clone and publish repositories, create pull requests, and review changes.
 
 ## Review turn changes
 
@@ -179,6 +179,49 @@ If cloning or pushing asks for a username, run `origin auth setup-git` to point 
 credentials again. Origin repositories use HTTPS and are published privately. Repositories mirrored
 from GitHub keep their pull requests on GitHub; open those from the GitHub remote.
 
+### Gice
+
+To sign in, open **Settings → Source control & issues → Gice**, enter your server's address, and
+choose **Sign in with Gice**. T3 Code shows a code and opens your server's approval page: approve
+only if the page shows the same code, and type the part of it the page asks for. The sign-in may
+push, merge and delete branches (`repo:write`), work on issues and pull requests (`issues:write`),
+and run checks and change workflow files (`workflows:write`), which run with your repositories'
+secrets. It renews itself and ends when you choose **Sign out**, which also ends it on the server,
+when you revoke it on your server under **Settings → Access tokens**, or after 90 days unused. If
+something needs access the sign-in lacks, the error names it and **Sign in again** asks for it. A
+server too old to sign apps in needs a token instead.
+
+Any of these works, in this order of precedence:
+
+1. A token saved for your server's host in the same place. Create one on your server at
+   `https://your-server/settings/tokens` with `repo:write`, `issues:write`, and `workflows:write`
+   scopes; one that expires has to be replaced when it does.
+2. The sign-in above. Sign in to each further server the same way.
+3. `GICE_TOKEN` with `GICE_HOST` in the server's environment.
+4. The `gice` CLI, signed in with `gice auth login --host https://your-server`. A server that offers
+   downloads installs it with `curl -fsSL https://your-server/install.sh | sh`. When the CLI signed in
+   through the browser, its sign-in lasts hours and the CLI renews it: T3 Code runs
+   `gice auth status` to have it renewed, so keep `gice` on the server's `PATH`.
+
+Settings lists every server with its account and lets you turn one off. Git push and clone use
+your own SSH key or Git credentials for that server, not the sign-in; `gice auth setup-git` makes
+Git use the `gice` CLI's login. A push that changes workflow files (`.gice/workflows/`) needs Git
+credentials with `workflows:write`. T3 Code needs a current Gice server, and Settings says when one
+needs an update.
+
+Pull requests built on each other's branches form a stack, which works as in
+[GitHub stacks](#github-stacks): **Merge stack** merges the open layers up to the selected one into
+the base of the lowest, and **Rebase stack** rebases them. Gice refuses both if a layer has commits
+you were not shown. A pull request into a branch that others merge into, such as `develop`, starts a
+stack of its own. T3 Code does not delete a branch other pull requests are based on; Gice lists them
+when you delete it there.
+
+A repository whose remote is on a Gice server T3 Code has a credential for is always recognized, over
+HTTPS or SSH. Links to a server named like `gice.example.com` are always read as Gice links. On a
+server with another name, a linked pull request is read as Gice's when a project in the same
+environment, or one of the folders a project tracks, is on that server, and a link in a new thread's
+first message names the thread when the thread's own project is.
+
 ## Start, clone, or publish a project
 
 To start from nothing, choose **New project** in the command palette (`Cmd/Ctrl+K`), or
@@ -194,7 +237,8 @@ Use **Add Project** in the command palette (`Cmd/Ctrl+K`) to clone a repository.
 provider or paste a Git URL, then choose where to save it. Only GitHub is listed at first. To list
 another provider here and in **Publish Repository**, turn on its switch under
 **Settings → Source control & issues**. A branch or file page copied from GitHub,
-GitLab, GitCafe, Codeberg or Bitbucket also works: T3 Code clones that repository's default branch.
+GitLab, GitCafe, Codeberg, Bitbucket, or a Gice server named like `gice.example.com` also works:
+T3 Code clones that repository's default branch.
 On other hosts, paste the repository's clone URL. The project opens right away while the
 clone runs in the background: you can write your first prompt, and sending waits until the files
 are in place. A toast tracks progress and lets you cancel; if the clone fails, retry it from the
@@ -259,7 +303,7 @@ without a connection, including after restarting the app. Saved content refreshe
 environment reconnects; submitting changes requires a connection.
 
 Enable **Remove agent credits when merging** in Settings → Source control & issues to remove recognized
-agent co-author and generated-by lines from GitHub merge and squash commit messages. Human
+agent co-author and generated-by lines from GitHub and Gice merge and squash commit messages. Human
 co-authors stay credited. The setting is off by default and projects can override it. It also
 applies to auto-merge, but not merge queues or native stack merges. Original commits keep their
 messages, so merge and rebase can still retain agent credits in those commits.
@@ -268,8 +312,8 @@ On web and desktop, hold **Shift** in the GitHub pull request list for quick act
 To close several, press **Close**, drag across the rows in the same group, and release.
 Press **Escape** before releasing to cancel. Failed closes stay in the list so you can retry them.
 
-GitHub, GitLab, and Azure DevOps support auto-merge while checks are outstanding. GitHub also
-supports approving waiting fork workflows and opening a revert pull request for a merged change.
+GitHub, GitLab, Azure DevOps, and Gice support auto-merge while checks are outstanding. GitHub and
+Gice open a revert pull request for a merged change, and GitHub also approves waiting fork workflows.
 
 Pull request sharing is off by default. In Settings → Environments → Pull request sharing (Pull
 request routing under Environments on mobile), choose **Read PRs** or **Read and act** for each
@@ -333,10 +377,11 @@ Tick a file off in the **Code** tab once you have read it and it collapses; the 
 running count. A tick belongs to the pull request rather than to a commit, so scoping the tab to a
 single commit keeps them. A file pushed to after you cleared it comes back marked **Changed**.
 
-On GitHub these are GitHub's own viewed marks, so a review carries between T3 Code and github.com
-in either direction. Forgejo, GitLab, Bitbucket, Azure DevOps, and Cursor Origin expose no record
-T3 Code can read, so the server you are connected to keeps them instead: they follow you across the
-apps connected to that server, but the host's own site will not show them, and the count reads **viewed in T3 Code**.
+On GitHub and Gice these are the host's own viewed marks, so a review carries between T3 Code and
+the host's site in either direction. Forgejo, GitLab, Bitbucket, Azure DevOps, and Cursor Origin
+expose no record T3 Code can read, so the server you are connected to keeps them instead: they
+follow you across the apps connected to that server, but the host's own site will not show them,
+and the count reads **viewed in T3 Code**.
 
 On mobile, open a changed file and mark it viewed from its header. Viewed files collapse,
 and their marks follow the same rules as on web and desktop.
@@ -357,13 +402,13 @@ and their marks follow the same rules as on web and desktop.
 A thread can hold several pull requests, including reviews from another repository on the same host.
 Use **Link pull request** in the command palette or **Linked items** panel, or right-click a
 pull request link in the conversation. Creating a pull request from Git actions links it automatically,
-and so does an agent creating one with `gh pr create` or `glab mr create`. Agents can link other
-pull requests with the `link_pull_request` tool.
+and so does an agent creating one with `gh pr create`, `glab mr create`, or `gice pr create`. Agents
+can link other pull requests with the `link_pull_request` tool.
 
 Agents can also read, open, update, reply on, and merge pull requests in the thread's repository
 through T3 Code's own tools, which use the same sign-in as the Pull requests page. An agent merges
-only the commit it last read: if someone pushed since, the merge is refused. On github.com an
-agent can also land a GitHub stack in one merge, like **Merge stack** below.
+only the commit it last read: if someone pushed since, the merge is refused. On github.com and Gice
+an agent can also land a stack in one merge, like **Merge stack** below.
 
 Use **Link pull request to thread** in the command palette to keep a pull request with the thread. From a review
 on the Pull requests page, **Link to thread** lets you search for an active thread. The review header
@@ -410,7 +455,7 @@ out from the matching organization and repository.
 ## Issues
 
 The Issues page lists the issues of every project whose remote is on GitHub, GitLab, Azure
-DevOps or Forgejo, grouped per tracker account. Open it from the sidebar's utility row or with
+DevOps, Forgejo or Gice, grouped per tracker account. Open it from the sidebar's utility row or with
 **Open issues** in the command palette. Filter by open or closed, by your involvement
 (assigned, opened by you, mentioning you), and by tracker. Under **Projects**, uncheck the
 projects you do not want to see; the list remembers them, and a project you add later shows.

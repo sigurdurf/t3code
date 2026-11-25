@@ -244,7 +244,7 @@ export function DesktopWebLinkCoordinator() {
     // those links until discovery settles; an ordinary link never waits for it.
     const hold =
       openPullRequestsInApp &&
-      (sourceControlClients.parseChangeRequestUrl(url) !== null ||
+      (sourceControlClients.parseChangeRequestLink(url) !== null ||
         sourceControlClients.parseCommitUrl(url) !== null)
         ? projectsSettled()
         : Promise.resolve();

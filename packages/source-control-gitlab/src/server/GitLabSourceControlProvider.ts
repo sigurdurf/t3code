@@ -225,6 +225,7 @@ export const make = Effect.gen(function* () {
 
   return SourceControlProvider.SourceControlProvider.of({
     kind: SourceControlProviderKind.make("gitlab"),
+    takesSourceRepository: true,
     // GitLab lists fork merge requests by source branch with no owner filter, so read a full page
     // once per branch. The first selector wins: GitManager puts `owner:branch` first for a fork
     // head, which tells the list to name fork source projects.

@@ -1244,6 +1244,29 @@ describe("adding a remark to the chat", () => {
     expect(sent).toContain(`Review: ${url}#pullrequestreview-9`);
     expect(sent).toContain("This doc comment belongs below.");
     expect(sent).toContain("more characters of the review summary are omitted");
+
+    // Gice names a review `review-<id>`.
+    const gice = "https://git.example.com/acme/web/pulls/42";
+    expect(
+      buildPullRequestCommentContext(
+        {
+          ...pullRequest,
+          reviewThreads: [
+            {
+              ...reviewThreads[0]!,
+              comments: [
+                {
+                  ...lineComment("d1", `${gice}#review-9`, "Rename this."),
+                  url: `${gice}#discussion-1`,
+                },
+              ],
+            },
+          ],
+          reviewThreadsTruncated: false,
+        },
+        { kind: "comment", comment: { ...review, url: `${gice}#review-9` } },
+      )?.text,
+    ).toContain("Line comments in this review:\n\noctocat on `src/main.rs` line 12: Rename this.");
   });
 
   it("keeps every added remark when a later hand-off lands", () => {

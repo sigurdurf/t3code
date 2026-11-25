@@ -29,8 +29,9 @@ export function pullRequestMarkdownExtensions(
   changeRequest: { readonly provider: string; readonly url: string } | null,
 ): MarkdownExtensions {
   if (changeRequest === null) return NO_EXTENSIONS;
-  const repositoryUrl = sourceControlClients.parseChangeRequestUrl(changeRequest.url)?.link
-    .repositoryUrl;
+  const repositoryUrl = sourceControlClients.parseChangeRequestLink(
+    changeRequest.url,
+  )?.repositoryUrl;
   if (repositoryUrl === undefined) return NO_EXTENSIONS;
   const key = `${changeRequest.provider}\u0000${repositoryUrl}`;
   let extensions = markdownExtensions.get(key);

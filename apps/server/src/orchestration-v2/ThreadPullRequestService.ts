@@ -187,10 +187,10 @@ export const make = Effect.gen(function* () {
             { refresh, confirmTerminal: false },
           );
           if (detected === null || detected.state !== "open") return;
-          const key = sourceControlDefinitions.parseChangeRequestUrl(detected.url)?.link;
+          const key = sourceControlDefinitions.parseChangeRequestLink(detected.url);
           // A link the user removed from a stack stays as a tombstone and is not added back.
           if (
-            key === undefined ||
+            key === null ||
             threadPullRequestsOf(thread).some((link) => threadPullRequestKeysEqual(link, key))
           ) {
             return;

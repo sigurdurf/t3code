@@ -63,11 +63,8 @@ function EnabledPullRequestThreadLinks({
   display,
   onPickerOpenChange,
 }: PullRequestThreadLinksProps) {
-  const parsedUrl = sourceControlClients.parseChangeRequestUrl(url);
-  const parsed = parsedUrl?.link ?? null;
-  const term = changeRequestTermKind(
-    (parsedUrl?.definition ?? sourceControlClients.get(undefined)).changeRequest,
-  );
+  const parsed = sourceControlClients.parseChangeRequestLink(url);
+  const term = changeRequestTermKind(sourceControlClients.changeRequestTerminology(url));
   const thread = useThreadShell(threadRef?.environmentId === environmentId ? threadRef : null);
   const currentThreadRef = thread === null ? null : threadRef;
   const linking = usePullRequestLinking(environmentId);

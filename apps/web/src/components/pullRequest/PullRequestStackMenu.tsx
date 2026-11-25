@@ -48,6 +48,7 @@ export function PullRequestStackMenu({
   preferAutoMerge,
   autoMergeArmed,
   canCancelAutoMerge,
+  mergeRebasesAbove,
   mergeMethod,
   onSelect,
   onActed,
@@ -73,6 +74,7 @@ export function PullRequestStackMenu({
   /** This layer carries a stack auto-merge request, which covers the layers below it. */
   autoMergeArmed: boolean;
   canCancelAutoMerge: boolean;
+  mergeRebasesAbove: boolean;
   mergeMethod: PullRequestMergeMethod;
   onSelect?: ((reference: PullRequestRef) => void) | undefined;
   onActed: () => void;
@@ -395,15 +397,25 @@ export function PullRequestStackMenu({
             </DialogTitle>
             <DialogDescription>
               {confirmation === "merge"
-                ? gt(
-                    "Merge #{number} and its unmerged layers below into {base} using {method}. {host} checks their rules before merging or queueing them and rebases the remaining stack after merging.",
-                    {
-                      number: reference.number,
-                      base: stack.base,
-                      method: mergeMethod,
-                      host: hostLabel,
-                    },
-                  )
+                ? mergeRebasesAbove
+                  ? gt(
+                      "Merge #{number} and its unmerged layers below into {base} using {method}. {host} checks their rules before merging or queueing them and rebases the remaining stack after merging.",
+                      {
+                        number: reference.number,
+                        base: stack.base,
+                        method: mergeMethod,
+                        host: hostLabel,
+                      },
+                    )
+                  : gt(
+                      "Merge #{number} and its unmerged layers below into {base} using {method}. {host} checks their rules before merging them.",
+                      {
+                        number: reference.number,
+                        base: stack.base,
+                        method: mergeMethod,
+                        host: hostLabel,
+                      },
+                    )
                 : confirmation === "enable-auto-merge"
                   ? gt(
                       "Merge #{number} and its unmerged layers below into {base} using {method} once every one of them meets the requirements on {host}. This may happen immediately.",

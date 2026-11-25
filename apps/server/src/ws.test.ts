@@ -2604,6 +2604,103 @@ it.effect.each([
     }).pipe(Effect.scoped, Effect.provide(ReplayTestLayer)),
 );
 
+// After a restart no identity is known yet; git resolving a tracked folder's later must reach a
+// connected client, which reads that repository's links by it. Live: the refresh batches through
+// `Stream.groupedWithin`, whose window needs real time to close.
+it.live("a connected shell gets a tracked folder's identity when it resolves", () =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+    const now = "2026-10-13T00:00:00.000Z";
+    const [last] = yield* sql<{ sequence: number }>`
+      INSERT INTO orchestration_events (
+        event_id, aggregate_kind, stream_id, stream_version, event_type,
+        occurred_at, actor_kind, payload_json, metadata_json, application_event_version
+      ) VALUES (
+        'tracked:0', 'thread', 'thread:tracked', 0, 'provider-session.detached',
+        ${now}, 'server', ${JSON.stringify({ providerSessionId: "session:tracked", detachedAt: now })},
+        '{}', 2
+      ) RETURNING sequence
+    `;
+    const project = {
+      id: ProjectId.make("project:tracked"),
+      title: "Tracked",
+      workspaceRoot: "/tmp/tracked",
+      trackedFolders: [{ path: "/tmp/tracked/api", name: "api", discovered: true }],
+      defaultModelSelection: null,
+      scripts: [],
+      createdAt: now,
+      updatedAt: now,
+    } satisfies OrchestrationProjectShell;
+    const apiIdentity = {
+      canonicalKey: "git.example.com/t3/api",
+      locator: {
+        source: "git-remote",
+        remoteName: "origin",
+        remoteUrl: "https://git.example.com/t3/api.git",
+      },
+    } as const;
+    const unknown = {
+      repositoryIdentity: null,
+      faviconPath: null,
+      repositoryIdentityResolved: false,
+    };
+    const changes = yield* PubSub.unbounded<ProjectEnrichment.ProjectEnrichmentChange>();
+    const items = yield* Effect.gen(function* () {
+      const stream = yield* subscribeOrchestrationV2Shell({
+        afterSequence: last!.sequence,
+        requestCompletionMarker: true,
+        knownProjectIdentities: projectIdentitiesDigest([{ ...project, repositoryIdentity: null }]),
+      });
+      return yield* stream.pipe(
+        Stream.tap((item) =>
+          item.kind === "synchronized"
+            ? PubSub.publish(changes, {
+                workspaceRoot: "/tmp/tracked/api",
+                repositoryIdentityResolved: true,
+                enrichment: {
+                  repositoryIdentity: apiIdentity,
+                  faviconPath: null,
+                  repositoryIdentityResolved: true,
+                },
+              })
+            : Effect.void,
+        ),
+        Stream.take(2),
+        Stream.runCollect,
+      );
+    }).pipe(
+      Effect.provideService(ThreadManagement.ThreadManagementService, {
+        ensureLegacyTranscript: () => Effect.void,
+        getThreadSnapshot: () => Effect.die("snapshot"),
+        listActiveShellIndex: () => Effect.die("snapshot"),
+        readShellSnapshot: () => Effect.die("snapshot"),
+        listActiveSubagentThreadIds: () => Effect.succeed([]),
+        streamStoredEventsFrom: () => Stream.empty,
+      } as unknown as ThreadManagement.ThreadManagementService["Service"]),
+      Effect.provideService(ProjectStore.ProjectStoreV2, {
+        listShells: () => Effect.succeed([project]),
+      } as unknown as ProjectStore.ProjectStoreV2["Service"]),
+      Effect.provideService(
+        ProjectService.ProjectService,
+        {} as ProjectService.ProjectService["Service"],
+      ),
+      Effect.provideService(ProjectEnrichment.ProjectEnrichmentService, {
+        subscribeChanges: PubSub.subscribe(changes),
+        getAvailable: () => Effect.succeed(unknown),
+        getAvailableRepositoryIdentity: () => Effect.succeed(unknown),
+      } as unknown as ProjectEnrichment.ProjectEnrichmentService["Service"]),
+    );
+    const refresh = Array.from(items)[1];
+    assert.equal(refresh?.kind, "snapshot");
+    if (refresh?.kind !== "snapshot") return;
+    assert.deepEqual(refresh.resolvedRepositoryIdentityRoots, ["/tmp/tracked/api"]);
+    assert.deepEqual(
+      refresh.snapshot.projects.map((shell) => [shell.id, shell.trackedRepositoryIdentities]),
+      [[project.id, [apiIdentity]]],
+    );
+  }).pipe(Effect.scoped, Effect.provide(ReplayTestLayer)),
+);
+
 const acpDriver = ProviderDriverKind.make("acpRegistry");
 const acpInstanceId = ProviderInstanceId.make("acpRegistry_test");
 const acpProjectId = ProjectId.make("project:acp");

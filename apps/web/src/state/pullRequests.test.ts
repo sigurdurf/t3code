@@ -1,4 +1,5 @@
 import { SourceControlProviderKind } from "@t3tools/contracts";
+import { NO_CHANGE_REQUEST_HOSTS } from "@t3tools/client-runtime/source-control-clients";
 import {
   EnvironmentId,
   ProjectId,
@@ -185,15 +186,22 @@ describe("pull request summary cache", () => {
         syncedAt: "2026-09-12T00:00:00Z",
       },
     };
-    const saved = threadPullRequestLinkToSummary(link, stale.projectId);
+    const saved = threadPullRequestLinkToSummary(link, stale.projectId, NO_CHANGE_REQUEST_HOSTS);
     expect(newestPullRequestSummary(stale, saved)?.state).toBe("closed");
     const fresh = summary({ isDraft: true, updatedAt: "2026-09-13T00:00:00Z" });
     expect(newestPullRequestSummary(fresh, saved)).toBe(fresh);
-    expect(threadPullRequestLinkToSummary({ ...link, snapshot: null }, stale.projectId)).toBeNull();
+    expect(
+      threadPullRequestLinkToSummary(
+        { ...link, snapshot: null },
+        stale.projectId,
+        NO_CHANGE_REQUEST_HOSTS,
+      ),
+    ).toBeNull();
     expect(
       threadPullRequestLinkToSummary(
         { ...link, snapshot: { ...link.snapshot, updatedAt: null } },
         stale.projectId,
+        NO_CHANGE_REQUEST_HOSTS,
       ),
     ).toBeNull();
   });

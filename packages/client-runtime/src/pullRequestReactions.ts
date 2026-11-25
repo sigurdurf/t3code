@@ -14,7 +14,10 @@ export function canReactPullRequestComment(
 ): boolean {
   return (
     detail.capabilities.reactions === true &&
-    !(detail.provider === "gitcafe" && comment.kind === "review")
+    (comment.kind !== "review" ||
+      // Servers from before `reviewReactions` knew GitCafe as the one host without them. Drop
+      // the fallback once clients stop supporting servers that do not report it.
+      (detail.capabilities.reviewReactions ?? detail.provider !== "gitcafe"))
   );
 }
 
